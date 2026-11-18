@@ -73,7 +73,9 @@ export default function Home() {
   const [projectsReady, setProjectsReady] = useState(false);
 
   useEffect(() => {
-    try { const saved = window.localStorage.getItem("axes:research-projects"); if (saved) setProjects(JSON.parse(saved)); } catch { /* Ignore invalid local project data. */ }
+    // Start with a clean dashboard: remove previously saved demo/session project data.
+    window.localStorage.removeItem("axes:research-projects");
+    setProjects([]);
     setProjectsReady(true);
   }, []);
 
@@ -263,8 +265,6 @@ export default function Home() {
               </div>
               <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. Research projects are saved in this browser.</div>
             </div>
-            <div className="suggestion-heading"><span>GET STARTED</span><span>Try a prompt</span></div>
-            <div className="suggestion-grid">{suggestions.map(({icon:Icon,title,prompt:sample})=><button key={title} className="suggestion-card" onClick={() => setPrompt(sample)}><span className="suggestion-icon"><Icon size={17}/></span><span><b>{title}</b><small>{sample}</small></span><ArrowUp size={14} className="suggestion-arrow"/></button>)}</div>
             <div className="workspace-footer"><span><span className="footer-dot"/> Ready to explore</span><span>AI, on your terms <b>·</b> AXES AI</span></div>
           </> : <div className="research-session">
             <div className="session-title"><span className="session-icon"><Microscope size={17}/></span><div><small>RESEARCH QUESTION</small><h1>{messages[messages.length-1]}</h1></div></div>
