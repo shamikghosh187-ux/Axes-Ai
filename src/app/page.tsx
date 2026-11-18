@@ -157,11 +157,9 @@ export default function Home() {
     setApiKey("");
     setApiKeySaved(false);
     setConnectedProviders((old) => old.filter((id) => id !== apiProvider));
-    setModels((old) => {
-      const remaining = old.filter((item) => item.providerId !== apiProvider);
-      if (remaining.length) setSelectedModel(chooseResearchModel(remaining));
-      return remaining;
-    });
+    const remaining = models.filter((item) => item.providerId !== apiProvider);
+    setModels(remaining);
+    if (remaining.length) setSelectedModel(chooseResearchModel(remaining));
   }
 
   async function startResearch(value = prompt) {
