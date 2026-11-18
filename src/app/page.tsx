@@ -58,7 +58,6 @@ export default function Home() {
   const [selectedModel, setSelectedModel] = useState<ModelOption>(defaultModels[0]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [modelsError, setModelsError] = useState("");
-  const [mode, setMode] = useState("Chat");
   const [prompt, setPrompt] = useState("");
   const [activeNav, setActiveNav] = useState("New chat");
   const [messages, setMessages] = useState<string[]>([]);
@@ -270,7 +269,7 @@ export default function Home() {
           </> : <div className="research-session">
             <div className="session-title"><span className="session-icon"><Microscope size={17}/></span><div><small>RESEARCH QUESTION</small><h1>{messages[messages.length-1]}</h1></div></div>
             <div className="session-status"><span className="status-dot"/> {researching ? "Preparing your workspace..." : "Chat ready"} <span>·</span> {selectedModel.model}</div>
-            <div className="session-placeholder"><div className="placeholder-icon"><Atom size={24}/></div><h2>{researching ? "Generating a response…" : researchError ? "Research could not complete" : researchAnswer ? "Assistant response" : "A question is the beginning"}</h2>{researching ? <p>Sending your question to {selectedModel.provider}. Please wait…</p> : researchError ? <p className="research-error">{researchError}</p> : researchAnswer ? <div className="research-answer">{researchAnswer}</div> : <p>Enter a question to begin. Add the selected provider's API key in Settings first.</p>}<button onClick={() => {setMessages([]);setResearchAnswer("");setResearchError("");setCurrentProjectId(null);setActiveNav("New chat");}}>New chat project <Plus size={14}/></button></div>
+            <div className="session-placeholder"><div className="placeholder-icon"><Atom size={24}/></div><h2>{researching ? "Generating a response…" : researchError ? "Research could not complete" : researchAnswer ? "Assistant response" : "A question is the beginning"}</h2>{researching ? <p>Sending your question to {selectedModel.provider}. Please wait…</p> : researchError ? <p className="research-error">{researchError}</p> : researchAnswer ? <div className="research-answer">{researchAnswer}</div> : <p>Enter a question to begin. Add the selected provider&apos;s API key in Settings first.</p>}<button onClick={() => {setMessages([]);setResearchAnswer("");setResearchError("");setCurrentProjectId(null);setActiveNav("New chat");}}>New chat project <Plus size={14}/></button></div>
             <div className="session-composer"><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Message AXES AI…" rows={2}/><button disabled={!prompt.trim()} onClick={()=>startResearch()}><ArrowUp size={16}/></button></div>
           </div>}
         </div>
