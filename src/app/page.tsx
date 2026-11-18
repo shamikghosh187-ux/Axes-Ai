@@ -243,7 +243,7 @@ export default function Home() {
             <div className="settings-heading"><span className="settings-kicker">PERSONAL WORKSPACE</span><h1>API connections</h1><p>Add an API key from any supported provider to start testing its models.</p></div>
             <div className="provider-grid">
               {providers.map((provider) => <button type="button" key={provider.id} className={apiProvider === provider.id ? "provider-card selected" : "provider-card"} onClick={() => { setApiProvider(provider.id); setApiKey(window.sessionStorage.getItem(`axes:provider:${provider.id}:api-key`) || ""); setApiKeySaved(Boolean(window.sessionStorage.getItem(`axes:provider:${provider.id}:api-key`))); setModelsError(""); }}>
-                <span className={"provider-mark " + provider.tone}>{provider.mark}</span><span className="provider-card-copy"><b>{provider.name}</b><small>{window.sessionStorage.getItem(`axes:provider:${provider.id}:api-key`) ? "API key connected" : "No API key added"}</small></span><span className="provider-card-action">{window.sessionStorage.getItem(`axes:provider:${provider.id}:api-key`) ? "Manage key" : "Add API key"} <Plus size={13}/></span>
+                <span className={"provider-mark " + provider.tone}>{provider.mark}</span><span className="provider-card-copy"><b>{provider.name}</b><small>{(apiProvider === provider.id && apiKeySaved) ? "API key connected · models ready" : "Select to add or manage a key"}</small></span><span className="provider-card-action">{(apiProvider === provider.id && apiKeySaved) ? "Manage key" : "Add API key"} <Plus size={13}/></span>
               </button>)}
             </div>
             <section className="settings-card">
