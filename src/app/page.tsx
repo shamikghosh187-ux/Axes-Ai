@@ -66,6 +66,7 @@ export default function Home() {
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
+  const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
   const [researchAnswer, setResearchAnswer] = useState("");
   const [researchError, setResearchError] = useState("");
   const [projects, setProjects] = useState<ResearchProject[]>([]);
@@ -84,37 +85,39 @@ export default function Home() {
   }, [projects, projectsReady]);
 
   useEffect(() => {
-    const key = window.sessionStorage.getItem(`axes:provider:${apiProvider}:api-key`);
-    if (!key) return;
     let cancelled = false;
-    setModelsLoading(true);
-    fetch("/api/models", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: apiProvider, apiKey: key }),
-    })
-      .then(async (response) => {
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || "Could not load saved provider models.");
-        const available = Array.isArray(data.models)
-          ? data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0)
-          : [];
-        if (!available.length) throw new Error("This provider returned no compatible research models.");
-        if (cancelled) return;
-        const providerMeta = providers.find((p) => p.id === apiProvider) || providers[0];
-        const nextModels = available.map((model: string) => ({ provider: providerMeta.name, providerId: apiProvider, model, mark: providerMeta.mark, tone: providerMeta.tone }));
-        setModels(nextModels);
-        setSelectedModel(chooseResearchModel(nextModels));
-        setApiKeySaved(true);
-      })
-      .catch((error) => {
-        if (!cancelled) setModelsError(error instanceof Error ? error.message : "Could not load saved provider models.");
-      })
-      .finally(() => {
-        if (!cancelled) setModelsLoading(false);
-      });
+    async function loadConnectedProviders() {
+      setModelsLoading(true);
+      const loaded: ModelOption[] = [];
+      const connected: string[] = [];
+      for (const providerMeta of providers) {
+        const key = window.sessionStorage.getItem(`axes:provider:${providerMeta.id}:api-key`);
+        if (!key) continue;
+        try {
+          const response = await fetch("/api/models", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider: providerMeta.id, apiKey: key }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || !Array.isArray(data.models)) continue;
+          const available = data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0);
+          if (!available.length) continue;
+          connected.push(providerMeta.id);
+          loaded.push(...available.map((model: string) => ({ provider: providerMeta.name, providerId: providerMeta.id, model, mark: providerMeta.mark, tone: providerMeta.tone })));
+        } catch { /* Keep other connected providers available if one is offline. */ }
+      }
+      if (!cancelled) {
+        setModels(loaded);
+        setConnectedProviders(connected);
+        if (loaded.length) setSelectedModel(chooseResearchModel(loaded));
+        setApiKeySaved(connected.includes(apiProvider));
+        setModelsLoading(false);
+      }
+    }
+    loadConnectedProviders();
     return () => { cancelled = true; };
-  }, [apiProvider]);
+  }, []);
 
   async function saveApiKey() {
     const key = apiKey.trim();
@@ -129,15 +132,16 @@ export default function Home() {
         body: JSON.stringify({ provider: apiProvider, apiKey: key }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "Could not load models from MeshAPI.");
+      if (!response.ok) throw new Error(data.error || "Could not load models for this provider.");
       const available = Array.isArray(data.models)
         ? data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0)
         : [];
-      if (!available.length) throw new Error("MeshAPI returned no models for this key.");
+      if (!available.length) throw new Error("This provider returned no compatible models.");
       const providerMeta = providers.find((p) => p.id === apiProvider) || providers[0];
       const nextModels = available.map((model: string) => ({ provider: providerMeta.name, providerId: apiProvider, model, mark: providerMeta.mark, tone: providerMeta.tone }));
       window.sessionStorage.setItem(`axes:provider:${apiProvider}:api-key`, key);
-      setModels(nextModels);
+      setModels((old) => [...old.filter((item) => item.providerId !== apiProvider), ...nextModels]);
+      setConnectedProviders((old) => old.includes(apiProvider) ? old : [...old, apiProvider]);
       setSelectedModel(chooseResearchModel(nextModels));
       setApiKeySaved(true);
       setActiveNav("New chat");
@@ -148,25 +152,33 @@ export default function Home() {
       setModelsLoading(false);
     }
   }
-
   function removeApiKey() {
     window.sessionStorage.removeItem(`axes:provider:${apiProvider}:api-key`);
     setApiKey("");
     setApiKeySaved(false);
+    setConnectedProviders((old) => old.filter((id) => id !== apiProvider));
+    setModels((old) => {
+      const remaining = old.filter((item) => item.providerId !== apiProvider);
+      if (remaining.length) setSelectedModel(chooseResearchModel(remaining));
+      return remaining;
+    });
   }
 
   async function startResearch(value = prompt) {
     const question = value.trim();
     if (!question || researching) return;
-    const providerId = selectedModel.providerId || apiProvider;
-    const key = window.sessionStorage.getItem(`axes:provider:${providerId}:api-key`);
-    if (!key) {
-      setApiProvider(selectedModel.providerId || "openai");
+    const connectedModels = models.filter((item) => window.sessionStorage.getItem(`axes:provider:${item.providerId}:api-key`));
+    const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model);
+    const fallbackByProvider = providers.map((provider) => chooseResearchModel(connectedModels.filter((item) => item.providerId === provider.id)).model).filter(Boolean);
+    const candidates = [preferred, ...providers.map((provider) => chooseResearchModel(connectedModels.filter((item) => item.providerId === provider.id))).filter((item): item is ModelOption => Boolean(item))]
+      .filter((item, index, all): item is ModelOption => Boolean(item) && all.findIndex((other) => other?.providerId === item.providerId && other?.model === item.model) === index);
+    if (!candidates.length) {
       setActiveNav("Settings");
-      setResearchError("Add and save this provider's API key in Settings to start researching.");
+      setResearchError("Connect at least one provider API key in Settings before sending a message.");
       return;
     }
 
+    const first = candidates[0];
     const projectId = currentProjectId ?? crypto.randomUUID();
     const existingProject = projects.find((item) => item.id === projectId);
     const now = Date.now();
@@ -175,15 +187,13 @@ export default function Home() {
       title: question.length > 72 ? question.slice(0, 69) + "…" : question,
       questions: [question],
       answer: "",
-      model: selectedModel.model,
+      model: first.model,
       updatedAt: now,
     };
-
+    setSelectedModel(first);
     setCurrentProjectId(projectId);
     setProjects((old) => existingProject
-      ? old.map((item) => item.id === projectId
-          ? { ...item, questions: [...item.questions, question], updatedAt: now }
-          : item)
+      ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], updatedAt: now } : item)
       : [newProject, ...old]);
     setPrompt("");
     setResearchAnswer("");
@@ -191,20 +201,33 @@ export default function Home() {
     setMessages((old) => [...old, question]);
     setResearching(true);
 
+    let lastError = "No connected provider could answer this message.";
     try {
-      const response = await fetch("/api/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: providerId, model: selectedModel.model, apiKey: key, question }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Research request failed.");
-      setResearchAnswer(data.answer);
-      setProjects((old) => old.map((item) => item.id === projectId
-        ? { ...item, answer: data.answer, model: selectedModel.model, updatedAt: Date.now() }
-        : item));
+      for (const candidate of candidates) {
+        const key = window.sessionStorage.getItem(`axes:provider:${candidate.providerId}:api-key`);
+        if (!key) continue;
+        try {
+          const response = await fetch("/api/research", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
+          if (typeof data.answer !== "string" || !data.answer.trim()) throw new Error(`${candidate.provider} returned an empty response.`);
+          setSelectedModel(candidate);
+          setResearchAnswer(data.answer);
+          setProjects((old) => old.map((item) => item.id === projectId
+            ? { ...item, answer: data.answer, model: candidate.model, updatedAt: Date.now() }
+            : item));
+          return;
+        } catch (error) {
+          lastError = error instanceof Error ? error.message : `${candidate.provider} request failed.`;
+        }
+      }
+      throw new Error(lastError);
     } catch (error) {
-      setResearchError(error instanceof Error ? error.message : "Research request failed.");
+      setResearchError(error instanceof Error ? error.message : "Could not get a response from connected providers.");
     } finally {
       setResearching(false);
     }
