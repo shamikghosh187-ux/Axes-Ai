@@ -14,9 +14,9 @@ type ModelOption = { provider: string; providerId: string; model: string; mark: 
 
 function readProviderKeys(providerId: string): ProviderKey[] {
   try {
-    const stored = window.sessionStorage.getItem("axes:provider:" + providerId + ":api-keys");
+    const stored = window.localStorage.getItem("axes:provider:" + providerId + ":api-keys");
     if (stored) return JSON.parse(stored) as ProviderKey[];
-    const legacy = window.sessionStorage.getItem("axes:provider:" + providerId + ":api-key");
+    const legacy = window.localStorage.getItem("axes:provider:" + providerId + ":api-key");
     return legacy ? [{ id: "legacy", value: legacy }] : [];
   } catch { return []; }
 }
@@ -83,9 +83,39 @@ export default function Home() {
   const [projectsReady, setProjectsReady] = useState(false);
 
   useEffect(() => {
-    // Start with a clean dashboard: remove previously saved demo/session project data.
-    window.localStorage.removeItem("axes:research-projects");
-    setProjects([]);
+    // Restore chats and migrate API credentials/chain from the older tab-only storage.
+    try {
+      const savedProjects = window.localStorage.getItem("axes:research-projects");
+      const restoredProjects = savedProjects ? JSON.parse(savedProjects) as ResearchProject[] : [];
+      setProjects(restoredProjects);
+      if (restoredProjects.length) {
+        const latest = restoredProjects[0];
+        setCurrentProjectId(latest.id);
+        setMessages(latest.questions || []);
+        setResearchAnswer(latest.answer || "");
+      }
+      for (const provider of providers) {
+        const persistentKey = "axes:provider:" + provider.id + ":api-keys";
+        if (!window.localStorage.getItem(persistentKey)) {
+          const sessionKeys = window.localStorage.getItem(persistentKey);
+          if (sessionKeys) window.localStorage.setItem(persistentKey, sessionKeys);
+          else {
+            const legacy = window.localStorage.getItem("axes:provider:" + provider.id + ":api-key");
+            if (legacy) window.localStorage.setItem(persistentKey, JSON.stringify([{ id: "legacy", value: legacy }]));
+          }
+        }
+        window.localStorage.removeItem(persistentKey);
+        window.localStorage.removeItem("axes:provider:" + provider.id + ":api-key");
+      }
+      const savedChain = window.localStorage.getItem("axes:api-chain");
+      if (!savedChain) {
+        const oldChain = window.localStorage.getItem("axes:api-chain");
+        if (oldChain) window.localStorage.setItem("axes:api-chain", oldChain);
+      }
+      window.localStorage.removeItem("axes:api-chain");
+    } catch {
+      // Keep the workspace usable if browser storage contains invalid data.
+    }
     setProjectsReady(true);
   }, []);
 
@@ -95,7 +125,7 @@ export default function Home() {
 
   useEffect(() => {
     try {
-      const storedChain = window.sessionStorage.getItem("axes:api-chain");
+      const storedChain = window.localStorage.getItem("axes:api-chain");
       if (storedChain) {
         const parsed = JSON.parse(storedChain) as { providerId: string; keyId: string }[];
         setApiChain(parsed.slice(0, 6));
@@ -107,14 +137,14 @@ export default function Home() {
           }
         }
         setApiChain(initial);
-        window.sessionStorage.setItem("axes:api-chain", JSON.stringify(initial));
+        window.localStorage.setItem("axes:api-chain", JSON.stringify(initial));
       }
     } catch { setApiChain([]); }
     setApiChainReady(true);
   }, []);
 
   useEffect(() => {
-    if (apiChainReady) window.sessionStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
+    if (apiChainReady) window.localStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
   }, [apiChain, apiChainReady]);
 
   function addToChain(providerId: string, keyId: string) {
@@ -192,8 +222,8 @@ export default function Home() {
       const providerMeta = providers.find((p) => p.id === apiProvider) || providers[0];
       const keyId = crypto.randomUUID();
       const nextKeys = [...readProviderKeys(apiProvider).filter((item) => item.value !== key), { id: keyId, value: key }];
-      window.sessionStorage.setItem("axes:provider:" + apiProvider + ":api-keys", JSON.stringify(nextKeys));
-      window.sessionStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
+      window.localStorage.setItem("axes:provider:" + apiProvider + ":api-keys", JSON.stringify(nextKeys));
+      window.localStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
       setApiKeys(nextKeys);
       const nextModels = available.map((model: string) => ({ provider: providerMeta.name, providerId: apiProvider, model, mark: providerMeta.mark, tone: providerMeta.tone, keyId }));
       setModels((old) => [...old, ...nextModels]);
@@ -210,8 +240,8 @@ export default function Home() {
 
   function removeApiKey(keyId: string) {
     const nextKeys = readProviderKeys(apiProvider).filter((item) => item.id !== keyId);
-    window.sessionStorage.setItem("axes:provider:" + apiProvider + ":api-keys", JSON.stringify(nextKeys));
-    window.sessionStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
+    window.localStorage.setItem("axes:provider:" + apiProvider + ":api-keys", JSON.stringify(nextKeys));
+    window.localStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
     setApiKeys(nextKeys);
     setModels((old) => old.filter((item) => !(item.providerId === apiProvider && item.keyId === keyId)));
     removeFromChain(apiProvider, keyId);
@@ -345,11 +375,11 @@ export default function Home() {
               <div className="settings-card-title"><span className="settings-card-icon"><KeyRound size={17}/></span><div><h2>{providers.find((p) => p.id === apiProvider)?.name || "Provider"} API key</h2><p>Enter your key to load the available models for this provider.</p></div></div>
               <div className="saved-api-keys"><div className="settings-label">Saved keys ({apiKeys.length})</div>{apiKeys.map((savedKey, index) => <div className="saved-api-key-row" key={savedKey.id}><span><b>Key {index + 1}</b><small>••••••••{savedKey.value.slice(-4)}</small></span><button type="button" className="settings-remove" onClick={() => removeApiKey(savedKey.id)}><Trash2 size={13}/> Remove</button></div>)}</div>
               <label className="settings-label" htmlFor="provider-key">Add another API key</label><div className="api-key-field"><input id="provider-key" type={showApiKey ? "text" : "password"} value={apiKey} onChange={(e)=>{setApiKey(e.target.value);setApiKeySaved(false);}} placeholder={`Paste your ${providers.find((p)=>p.id===apiProvider)?.name || apiProvider} API key`} autoComplete="off"/><button type="button" aria-label={showApiKey ? "Hide API key" : "Show API key"} onClick={()=>setShowApiKey(!showApiKey)}>{showApiKey ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
-              <div className="settings-security"><ShieldCheck size={15}/><span>Your key stays in this browser tab session and is used to discover models and send requests. Never share it.</span></div>
+              <div className="settings-security"><ShieldCheck size={15}/><span>Your key is saved in this browser on this device and is used only for model discovery and requests. Never share it.</span></div>
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
               <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
             </section>
-            <div className="settings-note">Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. Keys are session-only and are not saved to your AXES account or committed to GitHub.</div>
+            <div className="settings-note">Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Clearing browser data or removing a key will erase that local copy.</div>
           </div> : messages.length === 0 ? <>
             <div className="welcome-eyebrow"><span className="status-dot"/> YOUR PERSONAL AI WORKSPACE</div>
             <div className="welcome-title"><h1>One space.<br/><em>Every model.</em></h1><p>Chat with different AI models, compare their answers, and find the right one for every task.</p></div>
@@ -366,7 +396,7 @@ export default function Home() {
                   <button className="send-button" disabled={!prompt.trim()} aria-label="Send message" onClick={() => startResearch()}><ArrowUp size={17}/></button>
                 </div>
               </div>
-              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. Research projects are saved in this browser.</div>
+              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. Chats and API keys are saved in this browser on this device.</div>
             </div>
             <div className="workspace-footer"><span><span className="footer-dot"/> Ready to explore</span><span>AI, on your terms <b>·</b> AXES AI</span></div>
           </> : <div className="research-session">
