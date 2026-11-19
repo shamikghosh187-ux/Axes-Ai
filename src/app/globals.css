@@ -300,3 +300,20 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
  .chat-composer-tools span{display:none}
  .chat-model-menu{left:80px}
 }
+
+
+/* Fix chat scrolling: keep the app frame fixed and scroll only the message history */
+.axes-app:has(.research-session){height:100svh;min-height:0;overflow:hidden}
+.axes-main:has(.research-session){height:100svh;min-height:0;overflow:hidden}
+.research-scroll:has(.research-session){flex:1;min-height:0;overflow:hidden;overscroll-behavior:contain}
+.research-content:has(.research-session){height:100%;min-height:0;overflow:hidden}
+.research-session{height:100%;min-height:0}
+.chat-toolbar{flex:0 0 auto}
+.chat-thread{min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+.chat-composer-dock{position:relative;bottom:auto;flex:0 0 auto;margin-top:0}
+@media(max-width:760px){
+ .axes-app:has(.research-session),.axes-main:has(.research-session){height:100svh;min-height:0}
+ .research-scroll:has(.research-session){overflow:hidden}
+ .research-content:has(.research-session){height:100%;min-height:0}
+ .research-session{height:100%;min-height:0}
+}
