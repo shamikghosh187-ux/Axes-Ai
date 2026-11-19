@@ -17,6 +17,20 @@ export async function POST(request: Request) {
     const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
     const model = typeof body.model === "string" ? body.model.trim() : "";
     const question = typeof body.question === "string" ? body.question.trim() : "";
+    const history = Array.isArray(body.history)
+      ? body.history.slice(-24).flatMap((item: unknown) => {
+          if (typeof item !== "object" || item === null) return [];
+          const entry = item as Record<string, unknown>;
+          const role = entry.role === "assistant" ? "assistant" : entry.role === "user" ? "user" : null;
+          const content = typeof entry.content === "string" ? entry.content.trim().slice(0, 12000) : "";
+          return role && content ? [{ role, content }] : [];
+        })
+      : [];
+    const previousChats = typeof body.previousChats === "string" ? body.previousChats.slice(0, 12000) : "";
+    const baseSystemPrompt = "You are AXES AI, a careful research assistant. Structure your answer, distinguish evidence from uncertainty, and never invent sources or claim to browse.";
+    const systemPrompt = previousChats
+      ? baseSystemPrompt + "\n\nRelevant notes from the user\u0027s earlier AXES AI chats (may be incomplete or outdated; use only when relevant):\n" + previousChats
+      : baseSystemPrompt;
     if (!apiKey) return NextResponse.json({ error: "Add this provider's API key in Settings first." }, { status: 400 });
     if (!model) return NextResponse.json({ error: "Select an available model first." }, { status: 400 });
     if (!question || question.length > 12000) return NextResponse.json({ error: "Enter a question under 12,000 characters." }, { status: 400 });
@@ -25,19 +39,29 @@ export async function POST(request: Request) {
     if (provider === "gemini") {
       response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(60000),
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: "You are AXES AI, a careful research assistant. Structure your answer, distinguish evidence from uncertainty, and never invent sources or claim to browse." }] }, contents: [{ role: "user", parts: [{ text: question }] }] }),
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [...history.map((entry) => ({ role: entry.role === "assistant" ? "model" : "user", parts: [{ text: entry.content }] })), { role: "user", parts: [{ text: question }] }],
+        }),
       });
     } else if (provider === "anthropic") {
       response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, signal: AbortSignal.timeout(60000),
-        body: JSON.stringify({ model, max_tokens: 4096, system: "You are AXES AI, a careful research assistant. Structure your answer, distinguish evidence from uncertainty, and never invent sources or claim to browse.", messages: [{ role: "user", content: question }] }),
+        body: JSON.stringify({
+          model, max_tokens: 4096, system: systemPrompt,
+          messages: [...history.map((entry) => ({ role: entry.role, content: entry.content })), { role: "user", content: question }],
+        }),
       });
     } else {
       const providerConfig = config[provider as CompatibleProvider];
       if (!providerConfig) return NextResponse.json({ error: "Unsupported provider." }, { status: 400 });
       response = await fetch(`${providerConfig.base}/chat/completions`, {
         method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, signal: AbortSignal.timeout(60000),
-        body: JSON.stringify({ model, messages: [{ role: "system", content: "You are AXES AI, a careful research assistant. Structure your answer, distinguish evidence from uncertainty, and never invent sources or claim to browse." }, { role: "user", content: question }], temperature: 0.3 }),
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: question }],
+          temperature: 0.3,
+        }),
       });
     }
     const rawData: unknown = await response.json().catch(() => ({}));
