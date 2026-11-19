@@ -195,3 +195,31 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .api-failure-dialog{width:min(100%,420px);padding:25px;border:1px solid #59402d;border-radius:16px;background:#151714;box-shadow:0 24px 90px #000a;color:#e9ece8}
 .api-failure-dialog h2{margin:14px 0 8px;font-size:20px}.api-failure-dialog p{color:#aab2aa;font-size:12px;line-height:1.7}
 .saved-api-keys{display:grid;gap:7px;margin:12px 0 14px}.saved-api-key-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #303831;border-radius:8px;background:#111512}.saved-api-key-row>span{display:flex;flex-direction:column;gap:3px}.saved-api-key-row b{font-size:10px;color:#dce2dc}.saved-api-key-row small{font-size:9px;color:#899289}.saved-api-key-row .settings-remove{height:27px;padding:0 9px;font-size:9px}
+
+/* Editable API failover chain */
+.api-chain-card{margin:0 0 14px;padding:17px;border:1px solid #493627;border-radius:13px;background:linear-gradient(145deg,#1a1713,#121512)}
+.api-chain-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:13px}
+.api-chain-heading h2{display:flex;align-items:center;gap:9px;margin:5px 0;font-size:17px;font-weight:650;color:#f0eee9}
+.api-chain-heading h2 span{padding:3px 7px;border:1px solid #493627;border-radius:20px;background:#241b14;color:#f2b77f;font-size:10px}
+.api-chain-heading p{margin:0;color:#969d95;font-size:10px;line-height:1.6}
+.chain-status{flex:0 0 auto;padding:5px 8px;border:1px solid #3b4038;border-radius:20px;color:#aeb5ac;font-size:9px}
+.api-chain-list{display:grid;gap:7px;margin:0;padding:0;list-style:none;counter-reset:chain}
+.api-chain-item{display:flex;align-items:center;gap:9px;min-width:0;padding:8px 9px;border:1px solid #303831;border-radius:9px;background:#111512}
+.chain-number{display:grid;place-items:center;flex:0 0 21px;width:21px;height:21px;border-radius:7px;background:#2a1d13;color:#f6b477;font-size:10px;font-weight:700}
+.api-chain-item .provider-mark{flex-basis:29px;width:29px;height:29px}
+.chain-item-copy{display:flex;flex:1;flex-direction:column;gap:3px;min-width:0}
+.chain-item-copy b{overflow:hidden;color:#e9ece8;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+.chain-item-copy small{color:#899289;font-size:9px}
+.chain-item-actions{display:flex;gap:4px}
+.chain-item-actions button{display:grid;place-items:center;width:25px;height:25px;border:1px solid #343b35;border-radius:7px;background:#191d1a;color:#c0c7bf;font-size:14px}
+.chain-item-actions button:hover:not(:disabled){border-color:#805632;color:#f4b476}
+.chain-item-actions button:disabled{opacity:.28;cursor:not-allowed}
+.chain-empty{margin:0;padding:12px;border:1px dashed #3a403a;border-radius:8px;color:#929b92;font-size:10px}
+.chain-add-area{margin-top:13px;padding-top:12px;border-top:1px solid #303831}
+.chain-add-area>b{display:block;margin-bottom:8px;color:#b8c0b7;font-size:10px}
+.chain-add-list{display:flex;flex-wrap:wrap;gap:6px}
+.chain-add-list button{display:flex;align-items:center;gap:5px;padding:7px 9px;border:1px solid #3b4038;border-radius:7px;background:#171b18;color:#d9ded8;font-size:9px}
+.chain-add-list button:hover:not(:disabled){border-color:#a97949;color:#f1b77f;background:#211a14}
+.chain-add-list button:disabled{opacity:.35;cursor:not-allowed}
+.chain-limit-note{display:block;margin-top:8px;color:#d5a16f;font-size:9px}
+@media(max-width:760px){.api-chain-card{padding:13px}.api-chain-heading{gap:8px}.api-chain-heading p{max-width:280px}.chain-item-actions{gap:3px}.chain-item-actions button{width:23px;height:23px}}
