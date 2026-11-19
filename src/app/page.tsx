@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
-  Atom, ArrowUp, ChevronDown, Plus, Search, BookOpen, FileText,
+  Atom, ArrowUp, ChevronDown, Plus, Search, FileText,
   Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
   PanelLeftClose, Command, Orbit, Library, SlidersHorizontal,
   MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2
@@ -249,7 +249,8 @@ export default function Home() {
       setModels((old) => [...old, ...nextModels]);
       addToChain(apiProvider, keyId);
       setConnectedProviders((old) => old.includes(apiProvider) ? old : [...old, apiProvider]);
-      setSelectedModel(chooseResearchModel(nextModels));
+      const preferredModel = chooseResearchModel(nextModels);
+      if (preferredModel) setSelectedModel(preferredModel);
       setApiKey("");
       setApiKeySaved(true);
       setResearchError("");
