@@ -477,14 +477,6 @@ export default function Home() {
       </div>
     </aside>}
     <section className="axes-main">
-      <header className="axes-topbar">
-        <div className="topbar-left">
-          {!sidebarOpen && <button className="icon-button" aria-label="Open sidebar" onClick={() => setSidebarOpen(true)}><Menu size={17}/></button>}
-          <span className="breadcrumb">Workspace</span><span className="crumb-separator">/</span><span className="breadcrumb-current">{activeNav}</span>
-        </div>
-        <div className="topbar-actions"><button className="topbar-help"><Command size={14}/> <span>Shortcuts</span></button><button className="upgrade-button"><Sparkles size={14}/> Upgrade</button><div className="top-avatar">V</div></div>
-      </header>
-
       <div className="research-scroll">
         <div className="research-content">
           {activeNav === "Settings" ? <div className="settings-page">
