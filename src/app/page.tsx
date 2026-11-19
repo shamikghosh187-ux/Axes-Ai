@@ -91,6 +91,7 @@ export default function Home() {
   const [researchAnswer, setResearchAnswer] = useState("");
   const [researchError, setResearchError] = useState("");
   const [showApiFailureDialog, setShowApiFailureDialog] = useState(false);
+  const [apiFailureDetails, setApiFailureDetails] = useState<string[]>([]);
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projectsReady, setProjectsReady] = useState(false);
@@ -266,6 +267,7 @@ export default function Home() {
     const question = value.trim();
     if (!question || researching) return;
     setShowApiFailureDialog(false);
+    setApiFailureDetails([]);
     const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
     const candidates: ModelOption[] = [];
     const addCandidate = (candidate: ModelOption) => {
@@ -324,6 +326,7 @@ export default function Home() {
     setResearching(true);
 
     let lastError = "No connected provider could answer this message.";
+    const failedAttempts: string[] = [];
     try {
       for (const candidate of candidates) {
         const key = readProviderKeys(candidate.providerId).find((item) => item.id === candidate.keyId)?.value;
@@ -346,8 +349,12 @@ export default function Home() {
           return;
         } catch (error) {
           lastError = error instanceof Error ? error.message : `${candidate.provider} request failed.`;
+          const providerKeys = readProviderKeys(candidate.providerId);
+          const keyNumber = providerKeys.findIndex((item) => item.id === candidate.keyId) + 1;
+          failedAttempts.push(`${candidate.provider} · Key ${keyNumber || "?"} · ${candidate.model}: ${lastError}`);
         }
       }
+      setApiFailureDetails(failedAttempts);
       setShowApiFailureDialog(true);
       throw new Error(lastError);
     } catch (error) {
@@ -481,6 +488,6 @@ export default function Home() {
         </div>
       </div>
     </section>
-    {showApiFailureDialog && <div className="api-failure-overlay" role="dialog" aria-modal="true" aria-labelledby="api-failure-title"><div className="api-failure-dialog"><span className="settings-card-icon"><KeyRound size={19}/></span><h2 id="api-failure-title">All API keys failed</h2><p>AXES AI tried every connected key, but none returned an answer. Check your keys, account credits, model access, and provider status, or add another key.</p><div className="settings-actions"><button className="settings-save" onClick={() => {setShowApiFailureDialog(false);setActiveNav("Settings");}}>Open API settings</button><button className="settings-remove" onClick={() => setShowApiFailureDialog(false)}>Dismiss</button></div></div></div>}
+    {showApiFailureDialog && <div className="api-failure-overlay" role="dialog" aria-modal="true" aria-labelledby="api-failure-title"><div className="api-failure-dialog"><span className="settings-card-icon"><KeyRound size={19}/></span><h2 id="api-failure-title">All API keys failed</h2><p>AXES AI tried every connected key, but none returned an answer. Here are the provider responses so you can identify the problem.</p>{apiFailureDetails.length > 0 && <ul className="api-failure-details">{apiFailureDetails.map((detail, index) => <li key={index}>{detail}</li>)}</ul>}<div className="settings-actions"><button className="settings-save" onClick={() => {setShowApiFailureDialog(false);setActiveNav("Settings");}}>Open API settings</button><button className="settings-remove" onClick={() => setShowApiFailureDialog(false)}>Dismiss</button></div></div></div>}
   </main>;
 }
