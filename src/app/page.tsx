@@ -413,11 +413,19 @@ export default function Home() {
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
           if (typeof data.answer !== "string" || !data.answer.trim()) throw new Error(`${candidate.provider} returned an empty response.`);
           setSelectedModel(candidate);
-          setResearchAnswer(data.answer);
-          setTurns((old) => old.map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: data.answer, model: candidate.model, provider: candidate.provider, error: undefined } : turn));
-          setProjects((old) => old.map((item) => item.id === projectId
-            ? { ...item, answer: data.answer, model: candidate.model, turns: getProjectTurns(item).map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: data.answer, model: candidate.model, provider: candidate.provider, error: undefined } : turn), updatedAt: Date.now() }
-            : item));
+          // Reveal the completed response in short readable chunks instead of one visual wall.
+          // The provider response is still received as a whole; this is a paced display effect.
+          const answer = data.answer as string;
+          const chunkSize = 32;
+          for (let end = chunkSize; end < answer.length + chunkSize; end += chunkSize) {
+            const visibleAnswer = answer.slice(0, Math.min(end, answer.length));
+            setResearchAnswer(visibleAnswer);
+            setTurns((old) => old.map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: visibleAnswer, model: candidate.model, provider: candidate.provider, error: undefined } : turn));
+            setProjects((old) => old.map((item) => item.id === projectId
+              ? { ...item, answer: visibleAnswer, model: candidate.model, turns: getProjectTurns(item).map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: visibleAnswer, model: candidate.model, provider: candidate.provider, error: undefined } : turn), updatedAt: Date.now() }
+              : item));
+            if (end < answer.length) await new Promise((resolve) => window.setTimeout(resolve, 18));
+          }
           return;
         } catch (error) {
           lastError = error instanceof Error ? error.message : `${candidate.provider} request failed.`;
