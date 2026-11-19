@@ -26,7 +26,7 @@ function renderInlineMarkdown(value: string, keyPrefix: string): ReactNode[] {
 }
 
 function renderAnswerMarkdown(source: string): ReactNode {
-  const lines = source.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").split("\n");
+  const normalizedSource = source.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n");\n  const lines = normalizedSource.split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
   while (i < lines.length) {
