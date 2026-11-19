@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Atom, ArrowUp, ChevronDown, Plus, Search, FileText,
   Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
@@ -161,6 +161,17 @@ export default function Home() {
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projectsReady, setProjectsReady] = useState(false);
+  const chatThreadRef = useRef<HTMLDivElement>(null);
+  const latestTurnRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!turns.length) return;
+    const thread = chatThreadRef.current;
+    const latestTurn = latestTurnRef.current;
+    if (!thread || !latestTurn) return;
+    const targetTop = latestTurn.offsetTop - thread.offsetTop + thread.scrollTop;
+    thread.scrollTo({ top: Math.max(0, targetTop - 12), behavior: "smooth" });
+  }, [turns.length, turns[turns.length - 1]?.id]);
 
   useEffect(() => {
     // Restore chats and migrate API credentials/chain from the older tab-only storage.
@@ -535,8 +546,8 @@ export default function Home() {
               </div>
               <span className="chat-status-label"><span className="status-dot"/> {researching ? "Thinking" : "Ready"}</span>
             </div>
-            <div className="chat-thread">
-              {turns.map((turn) => <div className="chat-turn" key={turn.id}>
+            <div className="chat-thread" ref={chatThreadRef}>
+              {turns.map((turn, index) => <div className="chat-turn" key={turn.id} ref={index === turns.length - 1 ? latestTurnRef : undefined}>
                 <div className="user-message-row"><div className="user-message-bubble">{turn.question}</div></div>
                 <div className="assistant-message-row">
                   <div className="assistant-avatar"><Atom size={17}/></div>
