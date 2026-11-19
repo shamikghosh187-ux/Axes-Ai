@@ -491,13 +491,14 @@ export default function Home() {
       <div className="research-scroll">
         <div className="research-content">
           {activeNav === "Settings" ? <div className="settings-page">
-            <div className="settings-heading"><span className="settings-kicker">PERSONAL WORKSPACE</span><h1>API connections</h1><p>Add an API key from any supported provider to start testing its models.</p></div>
+            <div className="settings-heading settings-hero"><span className="settings-kicker">AXES CONTROL CENTER</span><h1>Settings</h1><p>Manage AI providers, routing, memory and local workspace preferences.</p><div className="settings-overview-grid"><div className="settings-overview-card"><span>Connected providers</span><b>{connectedProviders.length}</b><small>Providers with saved keys</small></div><div className="settings-overview-card"><span>Saved API keys</span><b>{providers.reduce((total, provider) => total + readProviderKeys(provider.id).length, 0)}</b><small>Stored in this browser</small></div><div className="settings-overview-card"><span>Active chain</span><b>{apiChain.length}<i>/6</i></b><small>Ordered fallback keys</small></div><div className="settings-overview-card"><span>AI memory</span><b className="settings-memory-status">{memoryEnabled ? "On" : "Off"}</b><small>Cross-chat context</small></div></div></div>
+            <div className="settings-section-intro"><div><span className="settings-kicker">01 · PROVIDERS</span><h2>AI connections</h2><p>Choose a provider to add, validate or manage its API keys.</p></div><span className="settings-section-count">{providers.length} providers supported</span></div>
             <div className="provider-grid">
               {providers.map((provider) => <button type="button" key={provider.id} className={apiProvider === provider.id ? "provider-card selected" : "provider-card"} onClick={() => { setApiProvider(provider.id); setApiKey(""); setApiKeys(readProviderKeys(provider.id)); setApiKeySaved(readProviderKeys(provider.id).length > 0); setModelsError(""); }}>
                 <span className={"provider-mark " + provider.tone}>{provider.mark}</span><span className="provider-card-copy"><b>{provider.name}</b><small>{connectedProviders.includes(provider.id) ? "API key connected · models ready" : "Select to add or manage a key"}</small></span><span className="provider-card-action">{connectedProviders.includes(provider.id) ? "Manage key" : "Add API key"} <Plus size={13}/></span>
               </button>)}
             </div>
-            <section className="api-chain-card">
+            <section className="api-chain-card" id="api-chain"><div className="settings-section-label"><span className="settings-kicker">02 · ROUTING</span><span>Automatic provider failover</span></div>
               <div className="api-chain-heading"><div><span className="settings-kicker">AUTOMATIC FAILOVER</span><h2>API Chain <span>{apiChain.length}/6</span></h2><p>AXES tries each key in this exact order and stops at the first successful answer.</p></div><span className="chain-status">{apiChain.length === 6 ? "Chain full" : "Up to 6 keys"}</span></div>
               {apiChain.length ? <ol className="api-chain-list">{apiChain.map((item, index) => {
                 const providerMeta = providers.find((provider) => provider.id === item.providerId);
@@ -516,14 +517,14 @@ export default function Home() {
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
               <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
             </section>
-            <section className="settings-card memory-settings-card">
+            <section className="settings-card memory-settings-card" id="memory-settings"><div className="settings-section-label"><span className="settings-kicker">04 · PERSONALIZATION</span><span>Context across conversations</span></div>
               <div className="settings-card-title"><span className="settings-card-icon"><BrainCircuit size={17}/></span><div><h2>Persistent AI memory</h2><p>Let AXES AI use relevant details from your earlier chats in this browser.</p></div></div>
               <div className="memory-toggle-row"><div><b>{memoryEnabled ? "Memory is on" : "Memory is off"}</b><small>{memoryEnabled ? "Previous chats and your notes can inform new conversations." : "New conversations will not use previous-chat context."}</small></div><button type="button" className={memoryEnabled ? "memory-toggle active" : "memory-toggle"} role="switch" aria-checked={memoryEnabled} onClick={() => setMemoryEnabled((value) => !value)}><span/></button></div>
               <label className="settings-label" htmlFor="axes-memory-notes">Things AXES AI should remember</label>
               <textarea id="axes-memory-notes" className="memory-notes-input" value={memoryNotes} onChange={(event) => setMemoryNotes(event.target.value)} placeholder="Add preferences, ongoing projects, goals, or other context you want AXES AI to remember…" rows={5} disabled={!memoryEnabled}/>
               <div className="memory-footnote">Memory is stored locally in this browser alongside your saved chats. It is not synced between devices. Do not store passwords or API keys here.</div>
             </section>
-            <div className="settings-note">Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Clearing browser data or removing a key will erase that local copy.</div>
+            <div className="settings-note"><span className="settings-kicker">LOCAL DATA & PRIVACY</span><br/>Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Clearing browser data or removing a key will erase that local copy.</div>
           </div> : messages.length === 0 ? <>
             <div className="welcome-eyebrow"><span className="status-dot"/> YOUR PERSONAL AI WORKSPACE</div>
             <div className="welcome-title"><h1>One space.<br/><em>Every model.</em></h1><p>Chat with different AI models, compare their answers, and find the right one for every task.</p></div>
