@@ -9,7 +9,17 @@ import {
 } from "lucide-react";
 
 type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number };
-type ModelOption = { provider: string; providerId: string; model: string; mark: string; tone: string };
+type ProviderKey = { id: string; value: string };
+type ModelOption = { provider: string; providerId: string; model: string; mark: string; tone: string; keyId?: string };
+
+function readProviderKeys(providerId: string): ProviderKey[] {
+  try {
+    const stored = window.sessionStorage.getItem("axes:provider:" + providerId + ":api-keys");
+    if (stored) return JSON.parse(stored) as ProviderKey[];
+    const legacy = window.sessionStorage.getItem("axes:provider:" + providerId + ":api-key");
+    return legacy ? [{ id: "legacy", value: legacy }] : [];
+  } catch { return []; }
+}
 
 const providers = [
   { id: "openai", name: "OpenAI", mark: "◉", tone: "openai" },
@@ -59,6 +69,7 @@ export default function Home() {
   const [researching, setResearching] = useState(false);
   const [apiProvider, setApiProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
+  const [apiKeys, setApiKeys] = useState<ProviderKey[]>([]);
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
@@ -86,21 +97,21 @@ export default function Home() {
       const loaded: ModelOption[] = [];
       const connected: string[] = [];
       for (const providerMeta of providers) {
-        const key = window.sessionStorage.getItem(`axes:provider:${providerMeta.id}:api-key`);
-        if (!key) continue;
-        try {
-          const response = await fetch("/api/models", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: providerMeta.id, apiKey: key }),
-          });
-          const data = await response.json().catch(() => ({}));
-          if (!response.ok || !Array.isArray(data.models)) continue;
-          const available = data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0);
-          if (!available.length) continue;
-          connected.push(providerMeta.id);
-          loaded.push(...available.map((model: string) => ({ provider: providerMeta.name, providerId: providerMeta.id, model, mark: providerMeta.mark, tone: providerMeta.tone })));
-        } catch { /* Keep other connected providers available if one is offline. */ }
+        for (const savedKey of readProviderKeys(providerMeta.id)) {
+          try {
+            const response = await fetch("/api/models", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ provider: providerMeta.id, apiKey: savedKey.value }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || !Array.isArray(data.models)) continue;
+            const available = data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0);
+            if (!available.length) continue;
+            if (!connected.includes(providerMeta.id)) connected.push(providerMeta.id);
+            loaded.push(...available.map((model: string) => ({ provider: providerMeta.name, providerId: providerMeta.id, model, mark: providerMeta.mark, tone: providerMeta.tone, keyId: savedKey.id })));
+          } catch { /* Continue trying other saved keys. */ }
+        }
       }
       if (!cancelled) {
         setModels(loaded);
@@ -128,46 +139,49 @@ export default function Home() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not load models for this provider.");
-      const available = Array.isArray(data.models)
-        ? data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0)
-        : [];
+      const available = Array.isArray(data.models) ? data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0) : [];
       if (!available.length) throw new Error("This provider returned no compatible models.");
       const providerMeta = providers.find((p) => p.id === apiProvider) || providers[0];
-      const nextModels = available.map((model: string) => ({ provider: providerMeta.name, providerId: apiProvider, model, mark: providerMeta.mark, tone: providerMeta.tone }));
-      window.sessionStorage.setItem(`axes:provider:${apiProvider}:api-key`, key);
-      setModels((old) => [...old.filter((item) => item.providerId !== apiProvider), ...nextModels]);
+      const keyId = crypto.randomUUID();
+      const nextKeys = [...readProviderKeys(apiProvider).filter((item) => item.value !== key), { id: keyId, value: key }];
+      window.sessionStorage.setItem("axes:provider:" + apiProvider + ":api-keys", JSON.stringify(nextKeys));
+      window.sessionStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
+      setApiKeys(nextKeys);
+      const nextModels = available.map((model: string) => ({ provider: providerMeta.name, providerId: apiProvider, model, mark: providerMeta.mark, tone: providerMeta.tone, keyId }));
+      setModels((old) => [...old, ...nextModels]);
       setConnectedProviders((old) => old.includes(apiProvider) ? old : [...old, apiProvider]);
       setSelectedModel(chooseResearchModel(nextModels));
+      setApiKey("");
       setApiKeySaved(true);
       setActiveNav("New chat");
       setResearchError("");
     } catch (error) {
       setModelsError(error instanceof Error ? error.message : "Could not connect to this provider.");
-    } finally {
-      setModelsLoading(false);
-    }
+    } finally { setModelsLoading(false); }
   }
-  function removeApiKey() {
-    window.sessionStorage.removeItem(`axes:provider:${apiProvider}:api-key`);
-    setApiKey("");
-    setApiKeySaved(false);
-    setConnectedProviders((old) => old.filter((id) => id !== apiProvider));
-    const remaining = models.filter((item) => item.providerId !== apiProvider);
-    setModels(remaining);
-    if (remaining.length) setSelectedModel(chooseResearchModel(remaining));
+
+  function removeApiKey(keyId: string) {
+    const nextKeys = readProviderKeys(apiProvider).filter((item) => item.id !== keyId);
+    window.sessionStorage.setItem("axes:provider:" + apiProvider + ":api-keys", JSON.stringify(nextKeys));
+    window.sessionStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
+    setApiKeys(nextKeys);
+    setModels((old) => old.filter((item) => !(item.providerId === apiProvider && item.keyId === keyId)));
+    if (!nextKeys.length) setConnectedProviders((old) => old.filter((id) => id !== apiProvider));
   }
 
   async function startResearch(value = prompt) {
     const question = value.trim();
     if (!question || researching) return;
-    const connectedModels = models.filter((item) => window.sessionStorage.getItem(`axes:provider:${item.providerId}:api-key`));
-    const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model);
+    const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
+    const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model && item.keyId === selectedModel.keyId);
     const candidates: ModelOption[] = [];
     if (preferred) candidates.push(preferred);
     for (const provider of providers) {
-      const candidate = chooseResearchModel(connectedModels.filter((item) => item.providerId === provider.id));
-      if (candidate && !candidates.some((item) => item.providerId === candidate.providerId && item.model === candidate.model)) {
-        candidates.push(candidate);
+      const providerModels = connectedModels.filter((item) => item.providerId === provider.id);
+      const keyIds = Array.from(new Set(providerModels.map((item) => item.keyId).filter((id): id is string => Boolean(id))));
+      for (const keyId of keyIds) {
+        const candidate = chooseResearchModel(providerModels.filter((item) => item.keyId === keyId));
+        if (candidate && !candidates.some((item) => item.providerId === candidate.providerId && item.keyId === candidate.keyId)) candidates.push(candidate);
       }
     }
     if (!candidates.length) {
@@ -202,7 +216,7 @@ export default function Home() {
     let lastError = "No connected provider could answer this message.";
     try {
       for (const candidate of candidates) {
-        const key = window.sessionStorage.getItem(`axes:provider:${candidate.providerId}:api-key`);
+        const key = readProviderKeys(candidate.providerId).find((item) => item.id === candidate.keyId)?.value;
         if (!key) continue;
         try {
           const response = await fetch("/api/research", {
@@ -263,16 +277,17 @@ export default function Home() {
           {activeNav === "Settings" ? <div className="settings-page">
             <div className="settings-heading"><span className="settings-kicker">PERSONAL WORKSPACE</span><h1>API connections</h1><p>Add an API key from any supported provider to start testing its models.</p></div>
             <div className="provider-grid">
-              {providers.map((provider) => <button type="button" key={provider.id} className={apiProvider === provider.id ? "provider-card selected" : "provider-card"} onClick={() => { setApiProvider(provider.id); setApiKey(window.sessionStorage.getItem(`axes:provider:${provider.id}:api-key`) || ""); setApiKeySaved(Boolean(window.sessionStorage.getItem(`axes:provider:${provider.id}:api-key`))); setModelsError(""); }}>
+              {providers.map((provider) => <button type="button" key={provider.id} className={apiProvider === provider.id ? "provider-card selected" : "provider-card"} onClick={() => { setApiProvider(provider.id); setApiKey(""); setApiKeys(readProviderKeys(provider.id)); setApiKeySaved(readProviderKeys(provider.id).length > 0); setModelsError(""); }}>
                 <span className={"provider-mark " + provider.tone}>{provider.mark}</span><span className="provider-card-copy"><b>{provider.name}</b><small>{connectedProviders.includes(provider.id) ? "API key connected · models ready" : "Select to add or manage a key"}</small></span><span className="provider-card-action">{connectedProviders.includes(provider.id) ? "Manage key" : "Add API key"} <Plus size={13}/></span>
               </button>)}
             </div>
             <section className="settings-card">
               <div className="settings-card-title"><span className="settings-card-icon"><KeyRound size={17}/></span><div><h2>{providers.find((p) => p.id === apiProvider)?.name || "Provider"} API key</h2><p>Enter your key to load the available models for this provider.</p></div></div>
-              <label className="settings-label" htmlFor="provider-key">API key</label><div className="api-key-field"><input id="provider-key" type={showApiKey ? "text" : "password"} value={apiKey} onChange={(e)=>{setApiKey(e.target.value);setApiKeySaved(false);}} placeholder={`Paste your ${providers.find((p)=>p.id===apiProvider)?.name || apiProvider} API key`} autoComplete="off"/><button type="button" aria-label={showApiKey ? "Hide API key" : "Show API key"} onClick={()=>setShowApiKey(!showApiKey)}>{showApiKey ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
+              <div className="saved-api-keys"><div className="settings-label">Saved keys ({apiKeys.length})</div>{apiKeys.map((savedKey, index) => <div className="saved-api-key-row" key={savedKey.id}><span><b>Key {index + 1}</b><small>••••••••{savedKey.value.slice(-4)}</small></span><button type="button" className="settings-remove" onClick={() => removeApiKey(savedKey.id)}><Trash2 size={13}/> Remove</button></div>)}</div>
+              <label className="settings-label" htmlFor="provider-key">Add another API key</label><div className="api-key-field"><input id="provider-key" type={showApiKey ? "text" : "password"} value={apiKey} onChange={(e)=>{setApiKey(e.target.value);setApiKeySaved(false);}} placeholder={`Paste your ${providers.find((p)=>p.id===apiProvider)?.name || apiProvider} API key`} autoComplete="off"/><button type="button" aria-label={showApiKey ? "Hide API key" : "Show API key"} onClick={()=>setShowApiKey(!showApiKey)}>{showApiKey ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
               <div className="settings-security"><ShieldCheck size={15}/><span>Your key stays in this browser tab session and is used to discover models and send requests. Never share it.</span></div>
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
-              <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : apiKeySaved ? <><Check size={15}/> Connected · models loaded</> : "Save API key"}</button><button className="settings-remove" onClick={removeApiKey}><Trash2 size={14}/> Remove key</button></div>
+              <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
             </section>
             <div className="settings-note">Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. Keys are session-only and are not saved to your AXES account or committed to GitHub.</div>
           </div> : messages.length === 0 ? <>
