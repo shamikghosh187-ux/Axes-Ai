@@ -37,12 +37,7 @@ const navItems = [
   { label: "Model lab", icon: FileText },
 ];
 
-const suggestions = [
-  { icon: Telescope, title: "Map the frontier of astrophysics", prompt: "What are the most important unresolved questions in astrophysics, and what evidence is shaping current research?" },
-  { icon: BookOpen, title: "Unpack a research paper", prompt: "Explain a recent black-hole research paper: its question, methods, findings, limitations, and significance." },
-  { icon: FlaskConical, title: "Shape a testable research idea", prompt: "Help me formulate a testable exoplanet research question, identify relevant evidence, and outline a feasible approach." },
-  { icon: Globe2, title: "Trace the evidence on dark matter", prompt: "Review recent dark-matter research, compare key findings, and identify the original sources behind the evidence." },
-];
+
 
 function Brand() {
   return <div className="axes-brand">
@@ -117,7 +112,7 @@ export default function Home() {
     }
     loadConnectedProviders();
     return () => { cancelled = true; };
-  }, []);
+  }, [apiProvider]);
 
   async function saveApiKey() {
     const key = apiKey.trim();
@@ -167,8 +162,14 @@ export default function Home() {
     if (!question || researching) return;
     const connectedModels = models.filter((item) => window.sessionStorage.getItem(`axes:provider:${item.providerId}:api-key`));
     const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model);
-    const candidates = [preferred, ...providers.map((provider) => chooseResearchModel(connectedModels.filter((item) => item.providerId === provider.id))).filter((item): item is ModelOption => Boolean(item))]
-      .filter((item, index, all): item is ModelOption => Boolean(item) && all.findIndex((other) => other?.providerId === item.providerId && other?.model === item.model) === index);
+    const candidates: ModelOption[] = [];
+    if (preferred) candidates.push(preferred);
+    for (const provider of providers) {
+      const candidate = chooseResearchModel(connectedModels.filter((item) => item.providerId === provider.id));
+      if (candidate && !candidates.some((item) => item.providerId === candidate.providerId && item.model === candidate.model)) {
+        candidates.push(candidate);
+      }
+    }
     if (!candidates.length) {
       setActiveNav("Settings");
       setResearchError("Connect at least one provider API key in Settings before sending a message.");
