@@ -299,6 +299,20 @@ export default function Home() {
     setCurrentProjectId(projectId);
     const pendingTurn: ResearchTurn = { id: crypto.randomUUID(), question, answer: "", model: first.model, provider: first.provider };
     const previousTurns = existingProject ? getProjectTurns(existingProject) : [];
+    const currentChatHistory = previousTurns.slice(-12).flatMap((turn) => [
+      { role: "user" as const, content: turn.question },
+      ...(turn.answer ? [{ role: "assistant" as const, content: turn.answer }] : []),
+    ]);
+    const previousChatMemory = projects
+      .filter((project) => project.id !== projectId)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .flatMap((project) => getProjectTurns(project)
+        .filter((turn) => turn.question.trim() && turn.answer.trim())
+        .slice(-3)
+        .map((turn) => "Chat: " + project.title + "\\nUser: " + turn.question + "\\nAXES AI: " + turn.answer))
+      .slice(0, 10)
+      .join("\\n\\n")
+      .slice(0, 12000);
     setTurns([...previousTurns, pendingTurn]);
     setProjects((old) => existingProject
       ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
@@ -318,7 +332,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
