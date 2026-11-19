@@ -48,7 +48,26 @@ function renderAnswerMarkdown(source: string): ReactNode {
       const headers = parseCells(line);
       i += 2;
       const rows: string[][] = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) rows.push(parseCells(lines[i++]));
+      while (i < lines.length) {
+        const candidate = lines[i].trim();
+        if (!candidate) break;
+        if (candidate.startsWith("|")) {
+          rows.push(parseCells(candidate));
+          i++;
+          continue;
+        }
+        // Some providers flatten a whole Markdown table into one paragraph:
+        // "criterion | points | explanation | criterion | points | explanation".
+        // Recover the original rows when the cells fit the table's column count.
+        if (candidate.includes("|")) {
+          const flattened = candidate.split("|").map(cell => cell.trim()).filter(Boolean);
+          if (flattened.length >= headers.length && flattened.length % headers.length === 0) {
+            for (let cell = 0; cell < flattened.length; cell += headers.length) rows.push(flattened.slice(cell, cell + headers.length));
+            i++;
+          }
+        }
+        break;
+      }
       blocks.push(<div className="answer-table-wrap" key={"table-" + i}><table><thead><tr>{headers.map((cell, n) => <th key={n}>{renderInlineMarkdown(cell, "th-" + i + "-" + n)}</th>)}</tr></thead><tbody>{rows.map((row, n) => <tr key={n}>{headers.map((_, col) => <td key={col}>{renderInlineMarkdown(row[col] || "", "td-" + i + "-" + n + "-" + col)}</td>)}</tr>)}</tbody></table></div>);
       continue;
     }
