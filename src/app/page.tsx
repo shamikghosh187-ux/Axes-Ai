@@ -174,6 +174,7 @@ export default function Home() {
   async function startResearch(value = prompt) {
     const question = value.trim();
     if (!question || researching) return;
+    setShowApiFailureDialog(false);
     const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
     const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model && item.keyId === selectedModel.keyId);
     const candidates: ModelOption[] = [];
