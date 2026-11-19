@@ -114,6 +114,7 @@ export default function Home() {
         }
       }
       if (!cancelled) {
+        setApiKeys(readProviderKeys(apiProvider));
         setModels(loaded);
         setConnectedProviders(connected);
         if (loaded.length) setSelectedModel(chooseResearchModel(loaded));
