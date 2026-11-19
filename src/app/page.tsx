@@ -275,8 +275,13 @@ export default function Home() {
     };
     for (const chainItem of apiChain) {
       const keyModels = connectedModels.filter((item) => item.providerId === chainItem.providerId && item.keyId === chainItem.keyId);
+      // Try the preferred chat model first, then every other model available to this same key.
+      // Only move to the next key after this key's compatible models have been exhausted.
       const best = chooseResearchModel(keyModels);
       if (best) addCandidate(best);
+      for (const modelOption of keyModels) {
+        if (modelOption.model !== best?.model) addCandidate(modelOption);
+      }
     }
     if (!candidates.length) {
       setActiveNav("Settings");
