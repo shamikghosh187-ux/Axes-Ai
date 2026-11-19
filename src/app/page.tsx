@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import {
   Atom, ArrowUp, ChevronDown, Plus, Search, BookOpen, FileText,
-  Settings2, Sparkles, Globe2, Paperclip, BrainCircuit, Microscope, FlaskConical,
-  PanelLeftClose, Command, Telescope, Orbit, Library, SlidersHorizontal,
+  Settings2, Sparkles, Globe2, Paperclip, BrainCircuit, Microscope,
+  PanelLeftClose, Command, Orbit, Library, SlidersHorizontal,
   MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2
 } from "lucide-react";
 
