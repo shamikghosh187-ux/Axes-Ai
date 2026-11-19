@@ -232,9 +232,13 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 
 
 /* ChatGPT-inspired conversation workspace */
-.research-content:has(.research-session){width:min(100%,900px);max-width:900px;padding:0 0 18px}
-.research-scroll:has(.research-session){padding:0 28px;align-items:stretch}
-.research-session{display:flex;flex-direction:column;min-height:calc(100svh - 61px);width:100%;max-width:850px;margin:0 auto}
+.research-content:has(.research-session){width:100%;max-width:none;padding:0 0 18px}
+.research-scroll:has(.research-session){padding:0 clamp(18px,3vw,48px);align-items:stretch}
+.research-session{display:flex;flex-direction:column;min-height:calc(100svh - 61px);width:100%;max-width:1360px;margin:0 auto}
+.chat-turn{width:100%;max-width:1180px}
+.user-message-bubble{max-width:min(82%,900px)}
+.assistant-message-content{max-width:100%}
+.chat-composer-dock{width:100%;max-width:1360px;margin-left:auto;margin-right:auto}
 .chat-toolbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;min-height:54px;padding:0 2px;border-bottom:1px solid #242a26;background:rgba(9,11,10,.94);backdrop-filter:blur(14px)}
 .chat-model-wrap{position:relative;display:flex;align-items:center;gap:9px;min-width:0}
 .chat-brand-mark{display:grid;place-items:center;width:27px;height:27px;border:1px solid #493627;border-radius:8px;background:#241a13;color:#fb923c}
