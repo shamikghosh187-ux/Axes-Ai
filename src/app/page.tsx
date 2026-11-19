@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   Atom, ArrowUp, ChevronDown, Plus, Search, BookOpen, FileText,
-  Settings2, Sparkles, Globe2, Paperclip, BrainCircuit, Microscope,
+  Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
   PanelLeftClose, Command, Orbit, Library, SlidersHorizontal,
   MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2
 } from "lucide-react";
@@ -211,7 +211,10 @@ export default function Home() {
         setApiKeys(readProviderKeys(apiProvider));
         setModels(loaded);
         setConnectedProviders(connected);
-        if (loaded.length) setSelectedModel(chooseResearchModel(loaded));
+        if (loaded.length) {
+          const preferredModel = chooseResearchModel(loaded);
+          if (preferredModel) setSelectedModel(preferredModel);
+        }
         setApiKeySaved(connected.includes(apiProvider));
         setModelsLoading(false);
       }
