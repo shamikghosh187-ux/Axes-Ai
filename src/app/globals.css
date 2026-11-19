@@ -223,3 +223,8 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .chain-add-list button:disabled{opacity:.35;cursor:not-allowed}
 .chain-limit-note{display:block;margin-top:8px;color:#d5a16f;font-size:9px}
 @media(max-width:760px){.api-chain-card{padding:13px}.api-chain-heading{gap:8px}.api-chain-heading p{max-width:280px}.chain-item-actions{gap:3px}.chain-item-actions button{width:23px;height:23px}}
+
+
+/* Settings now scrolls to accommodate the chain and saved keys */
+.research-scroll:has(.settings-page){overflow-y:auto;overflow-x:hidden}
+.research-content:has(.settings-page){min-height:100%;padding-bottom:28px}
