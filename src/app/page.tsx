@@ -70,6 +70,7 @@ export default function Home() {
   const [apiProvider, setApiProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
   const [apiKeys, setApiKeys] = useState<ProviderKey[]>([]);
+  const [apiChain, setApiChain] = useState<{ providerId: string; keyId: string }[]>([]);
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
@@ -90,6 +91,49 @@ export default function Home() {
   useEffect(() => {
     if (projectsReady) window.localStorage.setItem("axes:research-projects", JSON.stringify(projects));
   }, [projects, projectsReady]);
+
+  useEffect(() => {
+    try {
+      const storedChain = window.sessionStorage.getItem("axes:api-chain");
+      if (storedChain) {
+        const parsed = JSON.parse(storedChain) as { providerId: string; keyId: string }[];
+        setApiChain(parsed.slice(0, 6));
+      } else {
+        const initial: { providerId: string; keyId: string }[] = [];
+        for (const provider of providers) {
+          for (const key of readProviderKeys(provider.id)) {
+            if (initial.length < 6) initial.push({ providerId: provider.id, keyId: key.id });
+          }
+        }
+        setApiChain(initial);
+        window.sessionStorage.setItem("axes:api-chain", JSON.stringify(initial));
+      }
+    } catch { setApiChain([]); }
+  }, []);
+
+  useEffect(() => {
+    window.sessionStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
+  }, [apiChain]);
+
+  function addToChain(providerId: string, keyId: string) {
+    setApiChain((old) => old.length >= 6 || old.some((item) => item.providerId === providerId && item.keyId === keyId)
+      ? old
+      : [...old, { providerId, keyId }]);
+  }
+
+  function moveChainItem(index: number, direction: -1 | 1) {
+    setApiChain((old) => {
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= old.length) return old;
+      const next = [...old];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  }
+
+  function removeFromChain(providerId: string, keyId: string) {
+    setApiChain((old) => old.filter((item) => !(item.providerId === providerId && item.keyId === keyId)));
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -151,6 +195,7 @@ export default function Home() {
       setApiKeys(nextKeys);
       const nextModels = available.map((model: string) => ({ provider: providerMeta.name, providerId: apiProvider, model, mark: providerMeta.mark, tone: providerMeta.tone, keyId }));
       setModels((old) => [...old, ...nextModels]);
+      addToChain(apiProvider, keyId);
       setConnectedProviders((old) => old.includes(apiProvider) ? old : [...old, apiProvider]);
       setSelectedModel(chooseResearchModel(nextModels));
       setApiKey("");
@@ -168,6 +213,7 @@ export default function Home() {
     window.sessionStorage.removeItem("axes:provider:" + apiProvider + ":api-key");
     setApiKeys(nextKeys);
     setModels((old) => old.filter((item) => !(item.providerId === apiProvider && item.keyId === keyId)));
+    removeFromChain(apiProvider, keyId);
     if (!nextKeys.length) setConnectedProviders((old) => old.filter((id) => id !== apiProvider));
   }
 
@@ -176,23 +222,18 @@ export default function Home() {
     if (!question || researching) return;
     setShowApiFailureDialog(false);
     const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
-    const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model && item.keyId === selectedModel.keyId);
     const candidates: ModelOption[] = [];
     const addCandidate = (candidate: ModelOption) => {
       if (!candidates.some((item) => item.providerId === candidate.providerId && item.keyId === candidate.keyId && item.model === candidate.model)) candidates.push(candidate);
     };
-    if (preferred) addCandidate(preferred);
-    for (const provider of providers) {
-      const providerModels = connectedModels.filter((item) => item.providerId === provider.id);
-      const keyIds = Array.from(new Set(providerModels.map((item) => item.keyId).filter((id): id is string => Boolean(id))));
-      for (const keyId of keyIds) {
-        const best = chooseResearchModel(providerModels.filter((item) => item.keyId === keyId));
-        if (best) addCandidate(best);
-      }
+    for (const chainItem of apiChain) {
+      const keyModels = connectedModels.filter((item) => item.providerId === chainItem.providerId && item.keyId === chainItem.keyId);
+      const best = chooseResearchModel(keyModels);
+      if (best) addCandidate(best);
     }
     if (!candidates.length) {
       setActiveNav("Settings");
-      setResearchError("Connect at least one provider API key in Settings before sending a message.");
+      setResearchError("Add at least one saved API key to your API Chain in Settings before sending a message.");
       return;
     }
 
@@ -288,6 +329,17 @@ export default function Home() {
                 <span className={"provider-mark " + provider.tone}>{provider.mark}</span><span className="provider-card-copy"><b>{provider.name}</b><small>{connectedProviders.includes(provider.id) ? "API key connected · models ready" : "Select to add or manage a key"}</small></span><span className="provider-card-action">{connectedProviders.includes(provider.id) ? "Manage key" : "Add API key"} <Plus size={13}/></span>
               </button>)}
             </div>
+            <section className="api-chain-card">
+              <div className="api-chain-heading"><div><span className="settings-kicker">AUTOMATIC FAILOVER</span><h2>API Chain <span>{apiChain.length}/6</span></h2><p>AXES tries each key in this exact order and stops at the first successful answer.</p></div><span className="chain-status">{apiChain.length === 6 ? "Chain full" : "Up to 6 keys"}</span></div>
+              {apiChain.length ? <ol className="api-chain-list">{apiChain.map((item, index) => {
+                const providerMeta = providers.find((provider) => provider.id === item.providerId);
+                const providerKeys = readProviderKeys(item.providerId);
+                const keyIndex = providerKeys.findIndex((key) => key.id === item.keyId);
+                const key = providerKeys[keyIndex];
+                return <li className="api-chain-item" key={item.providerId + ":" + item.keyId}><span className="chain-number">{index + 1}</span><span className={"provider-mark " + (providerMeta?.tone || "")}>{providerMeta?.mark || "?"}</span><span className="chain-item-copy"><b>{providerMeta?.name || item.providerId} {keyIndex >= 0 ? "Key " + (keyIndex + 1) : "Key"}</b><small>{key ? "••••••••" + key.value.slice(-4) : "Key unavailable"}</small></span><div className="chain-item-actions"><button type="button" aria-label="Move up" title="Move up" disabled={index === 0} onClick={() => moveChainItem(index, -1)}>↑</button><button type="button" aria-label="Move down" title="Move down" disabled={index === apiChain.length - 1} onClick={() => moveChainItem(index, 1)}>↓</button><button type="button" aria-label="Remove from chain" title="Remove from chain" onClick={() => removeFromChain(item.providerId, item.keyId)}>×</button></div></li>;
+              })}</ol> : <p className="chain-empty">Your chain is empty. Add saved API keys below to enable automatic fallback.</p>}
+              <div className="chain-add-area"><b>Add saved keys to chain</b><div className="chain-add-list">{providers.flatMap((provider) => readProviderKeys(provider.id).map((key, index) => ({ provider, key, index }))).filter(({ provider, key }) => !apiChain.some((item) => item.providerId === provider.id && item.keyId === key.id)).map(({ provider, key, index }) => <button type="button" key={provider.id + ":" + key.id} disabled={apiChain.length >= 6} onClick={() => addToChain(provider.id, key.id)}><Plus size={12}/>{provider.name} {index + 1}</button>)}</div>{apiChain.length >= 6 && <small className="chain-limit-note">Maximum chain length reached. Remove a key to add another.</small>}</div>
+            </section>
             <section className="settings-card">
               <div className="settings-card-title"><span className="settings-card-icon"><KeyRound size={17}/></span><div><h2>{providers.find((p) => p.id === apiProvider)?.name || "Provider"} API key</h2><p>Enter your key to load the available models for this provider.</p></div></div>
               <div className="saved-api-keys"><div className="settings-label">Saved keys ({apiKeys.length})</div>{apiKeys.map((savedKey, index) => <div className="saved-api-key-row" key={savedKey.id}><span><b>Key {index + 1}</b><small>••••••••{savedKey.value.slice(-4)}</small></span><button type="button" className="settings-remove" onClick={() => removeApiKey(savedKey.id)}><Trash2 size={13}/> Remove</button></div>)}</div>
