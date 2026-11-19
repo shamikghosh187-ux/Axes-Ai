@@ -189,3 +189,9 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .provider-card-copy small{overflow:hidden;color:#879087;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
 .provider-card-action{display:flex;align-items:center;gap:4px;color:#e9a15b;font-size:9px;font-weight:650;white-space:nowrap}
 @media(max-width:520px){.provider-grid{grid-template-columns:1fr}.provider-card{padding:10px}}
+
+/* API fallback result dialog and saved-key list */
+.api-failure-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.72);backdrop-filter:blur(7px)}
+.api-failure-dialog{width:min(100%,420px);padding:25px;border:1px solid #59402d;border-radius:16px;background:#151714;box-shadow:0 24px 90px #000a;color:#e9ece8}
+.api-failure-dialog h2{margin:14px 0 8px;font-size:20px}.api-failure-dialog p{color:#aab2aa;font-size:12px;line-height:1.7}
+.saved-api-keys{display:grid;gap:7px;margin:12px 0 14px}.saved-api-key-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid #303831;border-radius:8px;background:#111512}.saved-api-key-row>span{display:flex;flex-direction:column;gap:3px}.saved-api-key-row b{font-size:10px;color:#dce2dc}.saved-api-key-row small{font-size:9px;color:#899289}.saved-api-key-row .settings-remove{height:27px;padding:0 9px;font-size:9px}
