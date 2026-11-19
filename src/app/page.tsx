@@ -96,23 +96,23 @@ export default function Home() {
       }
       for (const provider of providers) {
         const persistentKey = "axes:provider:" + provider.id + ":api-keys";
-        if (!window.localStorage.getItem(persistentKey)) {
-          const sessionKeys = window.localStorage.getItem(persistentKey);
+        if (!window.sessionStorage.getItem(persistentKey)) {
+          const sessionKeys = window.sessionStorage.getItem(persistentKey);
           if (sessionKeys) window.localStorage.setItem(persistentKey, sessionKeys);
           else {
-            const legacy = window.localStorage.getItem("axes:provider:" + provider.id + ":api-key");
+            const legacy = window.sessionStorage.getItem("axes:provider:" + provider.id + ":api-key");
             if (legacy) window.localStorage.setItem(persistentKey, JSON.stringify([{ id: "legacy", value: legacy }]));
           }
         }
-        window.localStorage.removeItem(persistentKey);
-        window.localStorage.removeItem("axes:provider:" + provider.id + ":api-key");
+        window.sessionStorage.removeItem(persistentKey);
+        window.sessionStorage.removeItem("axes:provider:" + provider.id + ":api-key");
       }
-      const savedChain = window.localStorage.getItem("axes:api-chain");
+      const savedChain = window.sessionStorage.getItem("axes:api-chain");
       if (!savedChain) {
-        const oldChain = window.localStorage.getItem("axes:api-chain");
+        const oldChain = window.sessionStorage.getItem("axes:api-chain");
         if (oldChain) window.localStorage.setItem("axes:api-chain", oldChain);
       }
-      window.localStorage.removeItem("axes:api-chain");
+      window.sessionStorage.removeItem("axes:api-chain");
     } catch {
       // Keep the workspace usable if browser storage contains invalid data.
     }
