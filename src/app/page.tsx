@@ -44,12 +44,14 @@ const providers = [
 ] as const;
 const defaultModels: ModelOption[] = [{ provider: "OpenAI", providerId: "openai", model: "gpt-4o-mini", mark: "◉", tone: "openai" }];
 
-function chooseResearchModel(options: ModelOption[]): ModelOption {
-  const unsuitable = /audio|speech|tts|whisper|embedding|embed-|rerank|moderation|image|video|transcri|orpheus/i;
+function isChatModel(model: string): boolean {
+  return !/(audio|speech|tts|whisper|embedding|embed-|rerank|moderation|image|video|transcri|orpheus|prompt-guard|safeguard)/i.test(model);
+}
+
+function chooseResearchModel(options: ModelOption[]): ModelOption | undefined {
+  const compatible = options.filter((option) => isChatModel(option.model));
   const preferred = /chat|instruct|gpt|gemini|claude|llama|qwen|deepseek|mistral|command-r/i;
-  return options.find((option) => !unsuitable.test(option.model) && preferred.test(option.model))
-    || options.find((option) => !unsuitable.test(option.model))
-    || options[0];
+  return compatible.find((option) => preferred.test(option.model)) || compatible[0];
 }
 
 const navItems = [
@@ -198,7 +200,7 @@ export default function Home() {
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !Array.isArray(data.models)) continue;
-            const available = data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0);
+            const available = data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0 && isChatModel(model));
             if (!available.length) continue;
             if (!connected.includes(providerMeta.id)) connected.push(providerMeta.id);
             loaded.push(...available.map((model: string) => ({ provider: providerMeta.name, providerId: providerMeta.id, model, mark: providerMeta.mark, tone: providerMeta.tone, keyId: savedKey.id })));
@@ -232,7 +234,7 @@ export default function Home() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || "Could not load models for this provider.");
-      const available = Array.isArray(data.models) ? data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0) : [];
+      const available = Array.isArray(data.models) ? data.models.filter((model: unknown): model is string => typeof model === "string" && model.trim().length > 0 && isChatModel(model)) : [];
       if (!available.length) throw new Error("This provider returned no compatible models.");
       const providerMeta = providers.find((p) => p.id === apiProvider) || providers[0];
       const keyId = crypto.randomUUID();
@@ -275,13 +277,10 @@ export default function Home() {
     };
     for (const chainItem of apiChain) {
       const keyModels = connectedModels.filter((item) => item.providerId === chainItem.providerId && item.keyId === chainItem.keyId);
-      // Try the preferred chat model first, then every other model available to this same key.
-      // Only move to the next key after this key's compatible models have been exhausted.
+      // One chat-capable model per key. Fail over between keys, not through unrelated
+      // audio, moderation, or other non-chat endpoints returned by provider model catalogs.
       const best = chooseResearchModel(keyModels);
       if (best) addCandidate(best);
-      for (const modelOption of keyModels) {
-        if (modelOption.model !== best?.model) addCandidate(modelOption);
-      }
     }
     if (!candidates.length) {
       setActiveNav("Settings");
@@ -317,9 +316,9 @@ export default function Home() {
         .filter((turn) => turn.question.trim() && turn.answer.trim())
         .slice(-3)
         .map((turn) => "Chat: " + project.title + "\\nUser: " + turn.question + "\\nAXES AI: " + turn.answer))
-      .slice(0, 10)
+      .slice(0, 4)
       .join("\\n\\n")
-      .slice(0, 12000);
+      .slice(0, 1800);
     setTurns([...previousTurns, pendingTurn]);
     setProjects((old) => existingProject
       ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
