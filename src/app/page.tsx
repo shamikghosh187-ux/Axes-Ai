@@ -162,6 +162,8 @@ export default function Home() {
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projectsReady, setProjectsReady] = useState(false);
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
+  const [memoryNotes, setMemoryNotes] = useState("");
   const chatThreadRef = useRef<HTMLDivElement>(null);
   const latestTurnRef = useRef<HTMLDivElement>(null);
 
@@ -177,6 +179,8 @@ export default function Home() {
   useEffect(() => {
     // Restore chats and migrate API credentials/chain from the older tab-only storage.
     try {
+      setMemoryEnabled(window.localStorage.getItem("axes:memory-enabled") !== "false");
+      setMemoryNotes(window.localStorage.getItem("axes:memory-notes") || "");
       const savedProjects = window.localStorage.getItem("axes:research-projects");
       const restoredProjects = savedProjects ? JSON.parse(savedProjects) as ResearchProject[] : [];
       setProjects(restoredProjects);
@@ -215,6 +219,12 @@ export default function Home() {
   useEffect(() => {
     if (projectsReady) window.localStorage.setItem("axes:research-projects", JSON.stringify(projects));
   }, [projects, projectsReady]);
+
+  useEffect(() => {
+    if (!projectsReady) return;
+    window.localStorage.setItem("axes:memory-enabled", String(memoryEnabled));
+    window.localStorage.setItem("axes:memory-notes", memoryNotes);
+  }, [memoryEnabled, memoryNotes, projectsReady]);
 
   useEffect(() => {
     try {
@@ -385,20 +395,20 @@ export default function Home() {
     setCurrentProjectId(projectId);
     const pendingTurn: ResearchTurn = { id: crypto.randomUUID(), question, answer: "", model: first.model, provider: first.provider };
     const previousTurns = existingProject ? getProjectTurns(existingProject) : [];
-    const currentChatHistory = previousTurns.slice(-2).flatMap((turn) => [
-      { role: "user" as const, content: turn.question.slice(0, 500) },
-      ...(turn.answer ? [{ role: "assistant" as const, content: turn.answer.slice(0, 500) }] : []),
+    const currentChatHistory = previousTurns.slice(-8).flatMap((turn) => [
+      { role: "user" as const, content: turn.question.slice(0, 1200) },
+      ...(turn.answer ? [{ role: "assistant" as const, content: turn.answer.slice(0, 1600) }] : []),
     ]);
-    const previousChatMemory = projects
+    const previousChatMemory = memoryEnabled ? projects
       .filter((project) => project.id !== projectId)
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .flatMap((project) => getProjectTurns(project)
         .filter((turn) => turn.question.trim() && turn.answer.trim())
-        .slice(-3)
-        .map((turn) => "Chat: " + project.title + "\\nUser: " + turn.question + "\\nAXES AI: " + turn.answer))
-      .slice(0, 2)
+        .slice(-4)
+        .map((turn) => "Previous chat: " + project.title + "\\nUser: " + turn.question.slice(0, 500) + "\\nAXES AI: " + turn.answer.slice(0, 700)))
+      .slice(0, 12)
       .join("\\n\\n")
-      .slice(0, 500);
+      .slice(0, 6000) : "";
     setTurns([...previousTurns, pendingTurn]);
     setProjects((old) => existingProject
       ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
@@ -419,7 +429,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "" }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -505,6 +515,13 @@ export default function Home() {
               <div className="settings-security"><ShieldCheck size={15}/><span>Your key is stored in this browser on this device and used for model discovery and requests. Browser storage is not encrypted by AXES AI, so only save keys on a trusted device.</span></div>
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
               <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
+            </section>
+            <section className="settings-card memory-settings-card">
+              <div className="settings-card-title"><span className="settings-card-icon"><BrainCircuit size={17}/></span><div><h2>Persistent AI memory</h2><p>Let AXES AI use relevant details from your earlier chats in this browser.</p></div></div>
+              <div className="memory-toggle-row"><div><b>{memoryEnabled ? "Memory is on" : "Memory is off"}</b><small>{memoryEnabled ? "Previous chats and your notes can inform new conversations." : "New conversations will not use previous-chat context."}</small></div><button type="button" className={memoryEnabled ? "memory-toggle active" : "memory-toggle"} role="switch" aria-checked={memoryEnabled} onClick={() => setMemoryEnabled((value) => !value)}><span/></button></div>
+              <label className="settings-label" htmlFor="axes-memory-notes">Things AXES AI should remember</label>
+              <textarea id="axes-memory-notes" className="memory-notes-input" value={memoryNotes} onChange={(event) => setMemoryNotes(event.target.value)} placeholder="Add preferences, ongoing projects, goals, or other context you want AXES AI to remember…" rows={5} disabled={!memoryEnabled}/>
+              <div className="memory-footnote">Memory is stored locally in this browser alongside your saved chats. It is not synced between devices. Do not store passwords or API keys here.</div>
             </section>
             <div className="settings-note">Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Clearing browser data or removing a key will erase that local copy.</div>
           </div> : messages.length === 0 ? <>
