@@ -12,6 +12,10 @@ const providers = {
 
 type Provider = keyof typeof providers;
 
+function isChatModel(model: string): boolean {
+  return !/(audio|speech|tts|whisper|embedding|embed-|rerank|moderation|image|video|transcri|orpheus|prompt-guard|safeguard)/i.test(model);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -39,8 +43,9 @@ export async function POST(request: Request) {
       : Array.isArray(data.data)
         ? data.data.map((model: ModelRecord) => model.id).filter((id: unknown): id is string => typeof id === "string")
         : [];
-    if (!models.length) return NextResponse.json({ error: `${config.name} returned no models. Check key permissions or account access.` }, { status: 502 });
-    return NextResponse.json({ models });
+    const chatModels = models.filter(isChatModel);
+    if (!chatModels.length) return NextResponse.json({ error: `${config.name} returned no chat-capable models. Check key permissions or account access.` }, { status: 502 });
+    return NextResponse.json({ models: chatModels });
   } catch {
     return NextResponse.json({ error: "Could not reach provider. Check your connection and try again." }, { status: 500 });
   }
