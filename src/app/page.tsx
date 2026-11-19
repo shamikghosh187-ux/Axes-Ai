@@ -8,7 +8,19 @@ import {
   MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2
 } from "lucide-react";
 
-type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number };
+type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
+type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[] };
+
+function getProjectTurns(project: ResearchProject): ResearchTurn[] {
+  if (Array.isArray(project.turns)) return project.turns;
+  return (project.questions || []).map((question, index) => ({
+    id: `${project.id}-${index}`,
+    question,
+    answer: index === (project.questions || []).length - 1 ? (project.answer || "") : "",
+    model: project.model || "",
+    provider: "",
+  }));
+}
 type ProviderKey = { id: string; value: string };
 type ModelOption = { provider: string; providerId: string; model: string; mark: string; tone: string; keyId?: string };
 
@@ -66,6 +78,7 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [activeNav, setActiveNav] = useState("New chat");
   const [messages, setMessages] = useState<string[]>([]);
+  const [turns, setTurns] = useState<ResearchTurn[]>([]);
   const [researching, setResearching] = useState(false);
   const [apiProvider, setApiProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
@@ -92,6 +105,7 @@ export default function Home() {
         const latest = restoredProjects[0];
         setCurrentProjectId(latest.id);
         setMessages(latest.questions || []);
+        setTurns(getProjectTurns(latest));
         setResearchAnswer(latest.answer || "");
       }
       for (const provider of providers) {
@@ -278,13 +292,17 @@ export default function Home() {
       questions: [question],
       answer: "",
       model: first.model,
+      turns: [],
       updatedAt: now,
     };
     setSelectedModel(first);
     setCurrentProjectId(projectId);
+    const pendingTurn: ResearchTurn = { id: crypto.randomUUID(), question, answer: "", model: first.model, provider: first.provider };
+    const previousTurns = existingProject ? getProjectTurns(existingProject) : [];
+    setTurns([...previousTurns, pendingTurn]);
     setProjects((old) => existingProject
-      ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], updatedAt: now } : item)
-      : [newProject, ...old]);
+      ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
+      : [{ ...newProject, turns: [pendingTurn] }, ...old]);
     setPrompt("");
     setResearchAnswer("");
     setResearchError("");
@@ -307,8 +325,9 @@ export default function Home() {
           if (typeof data.answer !== "string" || !data.answer.trim()) throw new Error(`${candidate.provider} returned an empty response.`);
           setSelectedModel(candidate);
           setResearchAnswer(data.answer);
+          setTurns((old) => old.map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: data.answer, model: candidate.model, provider: candidate.provider, error: undefined } : turn));
           setProjects((old) => old.map((item) => item.id === projectId
-            ? { ...item, answer: data.answer, model: candidate.model, updatedAt: Date.now() }
+            ? { ...item, answer: data.answer, model: candidate.model, turns: getProjectTurns(item).map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: data.answer, model: candidate.model, provider: candidate.provider, error: undefined } : turn), updatedAt: Date.now() }
             : item));
           return;
         } catch (error) {
@@ -318,7 +337,10 @@ export default function Home() {
       setShowApiFailureDialog(true);
       throw new Error(lastError);
     } catch (error) {
-      setResearchError(error instanceof Error ? error.message : "Could not get a response from connected providers.");
+      const message = error instanceof Error ? error.message : "Could not get a response from connected providers.";
+      setResearchError(message);
+      setTurns((old) => old.map((turn) => turn.id === pendingTurn.id ? { ...turn, error: message } : turn));
+      setProjects((old) => old.map((item) => item.id === projectId ? { ...item, turns: getProjectTurns(item).map((turn) => turn.id === pendingTurn.id ? { ...turn, error: message } : turn), updatedAt: Date.now() } : item));
     } finally {
       setResearching(false);
     }
@@ -330,8 +352,8 @@ export default function Home() {
         <Brand />
         <button className="icon-button sidebar-collapse" aria-label="Collapse sidebar" onClick={() => setSidebarOpen(false)}><PanelLeftClose size={17}/></button>
       </div>
-      <button className="new-research" onClick={() => { setActiveNav("New chat"); setMessages([]); setResearchAnswer(""); setResearchError(""); setCurrentProjectId(null); }}><Plus size={16}/> <span>New chat</span><span className="shortcut">⌘ K</span></button>
-      {projects.length > 0 && <><div className="sidebar-section-label">RECENT PROJECTS</div><nav className="sidebar-nav">{projects.slice(0, 8).map((project) => <button key={project.id} className={currentProjectId === project.id ? "nav-item active" : "nav-item"} onClick={() => { setCurrentProjectId(project.id); setMessages(project.questions); setResearchAnswer(project.answer); setResearchError(""); setActiveNav("Research project"); }}><FileText size={15}/><span>{project.title}</span></button>)}</nav></>}
+      <button className="new-research" onClick={() => { setActiveNav("New chat"); setMessages([]); setTurns([]); setResearchAnswer(""); setResearchError(""); setCurrentProjectId(null); }}><Plus size={16}/> <span>New chat</span><span className="shortcut">⌘ K</span></button>
+      {projects.length > 0 && <><div className="sidebar-section-label">RECENT PROJECTS</div><nav className="sidebar-nav">{projects.slice(0, 8).map((project) => <button key={project.id} className={currentProjectId === project.id ? "nav-item active" : "nav-item"} onClick={() => { setCurrentProjectId(project.id); setMessages(project.questions); setTurns(getProjectTurns(project)); setResearchAnswer(project.answer); setResearchError(""); setActiveNav("Research project"); }}><FileText size={15}/><span>{project.title}</span></button>)}</nav></>}
       <div className="sidebar-section-label">WORKSPACE</div>
       <nav className="sidebar-nav">
         {navItems.map(({label,icon:Icon}) => <button key={label} className={activeNav === label ? "nav-item active" : "nav-item"} onClick={() => setActiveNav(label)}><Icon size={16}/><span>{label}</span></button>)}
@@ -413,19 +435,20 @@ export default function Home() {
               <span className="chat-status-label"><span className="status-dot"/> {researching ? "Thinking" : "Ready"}</span>
             </div>
             <div className="chat-thread">
-              {messages.map((message, index) => <div className="chat-turn" key={index}>
-                <div className="user-message-row"><div className="user-message-bubble">{message}</div></div>
-                {index === messages.length - 1 && <div className="assistant-message-row">
+              {turns.map((turn) => <div className="chat-turn" key={turn.id}>
+                <div className="user-message-row"><div className="user-message-bubble">{turn.question}</div></div>
+                <div className="assistant-message-row">
                   <div className="assistant-avatar"><Atom size={17}/></div>
                   <div className="assistant-message-content">
-                    <div className="assistant-name">AXES AI <span>{selectedModel.model}</span></div>
-                    {researching ? <div className="thinking-indicator"><i/><i/><i/> <span>Thinking…</span></div>
-                      : researchAnswer ? <div className="assistant-answer-text">{researchAnswer}</div>
-                      : researchError ? <p className="research-error">{researchError}</p>
-                      : <p className="assistant-waiting-copy">Your response will appear here.</p>}
-                    {researchAnswer && !researching && <div className="answer-actions"><button type="button" title="Copy response" onClick={() => navigator.clipboard?.writeText(researchAnswer)}><FileText size={14}/> Copy</button><span>Generated by {selectedModel.provider}</span></div>}
+                    <div className="assistant-name">AXES AI <span>{turn.model || selectedModel.model}</span></div>
+                    {researching && !turn.answer && !turn.error && turn.id === turns[turns.length - 1]?.id
+                      ? <div className="thinking-indicator"><i/><i/><i/> <span>Thinking…</span></div>
+                      : turn.answer ? <div className="assistant-answer-text">{turn.answer}</div>
+                      : turn.error ? <p className="research-error">{turn.error}</p>
+                      : <p className="assistant-waiting-copy">Waiting for response…</p>}
+                    {turn.answer && <div className="answer-actions"><button type="button" title="Copy response" onClick={() => navigator.clipboard?.writeText(turn.answer)}><FileText size={14}/> Copy</button><span>{turn.provider ? `Generated by ${turn.provider}` : "Saved response"}</span></div>}
                   </div>
-                </div>}
+                </div>
               </div>)}
               {researching && messages.length === 0 && <div className="assistant-message-row"><div className="assistant-avatar"><Atom size={17}/></div><div className="thinking-indicator"><i/><i/><i/> <span>Thinking…</span></div></div>}
               {!researching && !researchAnswer && !researchError && messages.length === 0 && <div className="chat-empty-state"><div className="chat-empty-icon"><Sparkles size={22}/></div><h2>What would you like to explore?</h2><p>Ask a question and AXES AI will find an available model in your API chain.</p></div>}
