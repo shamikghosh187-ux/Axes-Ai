@@ -19,15 +19,15 @@ export async function POST(request: Request) {
     const model = typeof body.model === "string" ? body.model.trim() : "";
     const question = typeof body.question === "string" ? body.question.trim() : "";
     const history: HistoryEntry[] = Array.isArray(body.history)
-      ? body.history.slice(-8).flatMap((item: unknown) => {
+      ? body.history.slice(-4).flatMap((item: unknown) => {
           if (typeof item !== "object" || item === null) return [];
           const entry = item as Record<string, unknown>;
           const role = entry.role === "assistant" ? "assistant" : entry.role === "user" ? "user" : null;
-          const content = typeof entry.content === "string" ? entry.content.trim().slice(0, 1800) : "";
+          const content = typeof entry.content === "string" ? entry.content.trim().slice(0, 500) : "";
           return role && content ? [{ role, content }] : [];
         })
       : [];
-    const previousChats = typeof body.previousChats === "string" ? body.previousChats.slice(0, 1800) : "";
+    const previousChats = typeof body.previousChats === "string" ? body.previousChats.slice(0, 500) : "";
     const baseSystemPrompt = "You are AXES AI, a careful research assistant. Structure your answer, distinguish evidence from uncertainty, and never invent sources or claim to browse.";
     const systemPrompt = previousChats
       ? baseSystemPrompt + "\n\nRelevant notes from the user\u0027s earlier AXES AI chats (may be incomplete or outdated; use only when relevant):\n" + previousChats
