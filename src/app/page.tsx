@@ -96,7 +96,7 @@ export default function Home() {
       }
       for (const provider of providers) {
         const persistentKey = "axes:provider:" + provider.id + ":api-keys";
-        if (!window.sessionStorage.getItem(persistentKey)) {
+        if (!window.localStorage.getItem(persistentKey)) {
           const sessionKeys = window.sessionStorage.getItem(persistentKey);
           if (sessionKeys) window.localStorage.setItem(persistentKey, sessionKeys);
           else {
@@ -107,7 +107,7 @@ export default function Home() {
         window.sessionStorage.removeItem(persistentKey);
         window.sessionStorage.removeItem("axes:provider:" + provider.id + ":api-key");
       }
-      const savedChain = window.sessionStorage.getItem("axes:api-chain");
+      const savedChain = window.localStorage.getItem("axes:api-chain");
       if (!savedChain) {
         const oldChain = window.sessionStorage.getItem("axes:api-chain");
         if (oldChain) window.localStorage.setItem("axes:api-chain", oldChain);
@@ -375,7 +375,7 @@ export default function Home() {
               <div className="settings-card-title"><span className="settings-card-icon"><KeyRound size={17}/></span><div><h2>{providers.find((p) => p.id === apiProvider)?.name || "Provider"} API key</h2><p>Enter your key to load the available models for this provider.</p></div></div>
               <div className="saved-api-keys"><div className="settings-label">Saved keys ({apiKeys.length})</div>{apiKeys.map((savedKey, index) => <div className="saved-api-key-row" key={savedKey.id}><span><b>Key {index + 1}</b><small>••••••••{savedKey.value.slice(-4)}</small></span><button type="button" className="settings-remove" onClick={() => removeApiKey(savedKey.id)}><Trash2 size={13}/> Remove</button></div>)}</div>
               <label className="settings-label" htmlFor="provider-key">Add another API key</label><div className="api-key-field"><input id="provider-key" type={showApiKey ? "text" : "password"} value={apiKey} onChange={(e)=>{setApiKey(e.target.value);setApiKeySaved(false);}} placeholder={`Paste your ${providers.find((p)=>p.id===apiProvider)?.name || apiProvider} API key`} autoComplete="off"/><button type="button" aria-label={showApiKey ? "Hide API key" : "Show API key"} onClick={()=>setShowApiKey(!showApiKey)}>{showApiKey ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
-              <div className="settings-security"><ShieldCheck size={15}/><span>Your key is saved in this browser on this device and is used only for model discovery and requests. Never share it.</span></div>
+              <div className="settings-security"><ShieldCheck size={15}/><span>Your key is stored in this browser on this device and used for model discovery and requests. Browser storage is not encrypted by AXES AI, so only save keys on a trusted device.</span></div>
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
               <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
             </section>
