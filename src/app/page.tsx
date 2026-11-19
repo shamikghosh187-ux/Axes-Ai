@@ -202,7 +202,6 @@ export default function Home() {
       setSelectedModel(chooseResearchModel(nextModels));
       setApiKey("");
       setApiKeySaved(true);
-      setActiveNav("New chat");
       setResearchError("");
     } catch (error) {
       setModelsError(error instanceof Error ? error.message : "Could not connect to this provider.");
