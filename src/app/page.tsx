@@ -12,21 +12,21 @@ type ResearchTurn = { id: string; question: string; answer: string; model: strin
 type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[] };
 
 function renderInlineMarkdown(value: string, keyPrefix: string): ReactNode[] {
-  const pattern = /(\\*\\*[^*]+\\*\\*|__[^_]+__|\\*[^*]+\\*|_[^_]+_|\x60[^`]+\x60|\\[[^\\]]+\\]\\(https?:\\/\\/[^\\s)]+\\)|https?:\\/\\/[^\\s]+)/g;
+  const pattern = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\x60[^`]+\x60|\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s]+)/g;
   return value.split(pattern).filter(Boolean).map((part, index) => {
     const key = keyPrefix + "-" + index;
     if ((part.startsWith("**") && part.endsWith("**")) || (part.startsWith("__") && part.endsWith("__"))) return <strong key={key}>{part.slice(2, -2)}</strong>;
     if ((part.startsWith("*") && part.endsWith("*")) || (part.startsWith("_") && part.endsWith("_"))) return <em key={key}>{part.slice(1, -1)}</em>;
     if (part.startsWith("`") && part.endsWith("`")) return <code key={key}>{part.slice(1, -1)}</code>;
-    const link = part.match(/^\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)$/);
+    const link = part.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
     if (link) return <a key={key} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>;
-    if (/^https?:\\/\\//.test(part)) return <a key={key} href={part} target="_blank" rel="noreferrer">{part}</a>;
+    if (/^https?:\/\//.test(part)) return <a key={key} href={part} target="_blank" rel="noreferrer">{part}</a>;
     return <span key={key}>{part}</span>;
   });
 }
 
 function renderAnswerMarkdown(source: string): ReactNode {
-  const lines = source.replace(/<br\\s*\\/?>/gi, "\\n").replace(/\\r\\n?/g, "\\n").split("\\n");
+  const lines = source.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
   while (i < lines.length) {
@@ -38,12 +38,12 @@ function renderAnswerMarkdown(source: string): ReactNode {
       i++;
       while (i < lines.length && !/^\x60\x60\x60/.test(lines[i].trim())) code.push(lines[i++]);
       i++;
-      blocks.push(<pre key={"code-" + i} data-language={language}><code>{code.join("\\n")}</code></pre>);
+      blocks.push(<pre key={"code-" + i} data-language={language}><code>{code.join("\n")}</code></pre>);
       continue;
     }
-    if (/^(---+|\\*\\*\\*|___)$/.test(line)) { blocks.push(<hr key={"hr-" + i++}/>); continue; }
-    if (line.startsWith("|") && i + 1 < lines.length && /^\\s*\\|?\\s*:?-{2,}/.test(lines[i + 1])) {
-      const parseCells = (row: string) => row.trim().replace(/^\\|/, "").replace(/\\|$/, "").split("|").map(cell => cell.trim());
+    if (/^(---+|\*\*\*|___)$/.test(line)) { blocks.push(<hr key={"hr-" + i++}/>); continue; }
+    if (line.startsWith("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+      const parseCells = (row: string) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(cell => cell.trim());
       const headers = parseCells(line);
       i += 2;
       const rows: string[][] = [];
@@ -51,25 +51,25 @@ function renderAnswerMarkdown(source: string): ReactNode {
       blocks.push(<div className="answer-table-wrap" key={"table-" + i}><table><thead><tr>{headers.map((cell, n) => <th key={n}>{renderInlineMarkdown(cell, "th-" + i + "-" + n)}</th>)}</tr></thead><tbody>{rows.map((row, n) => <tr key={n}>{headers.map((_, col) => <td key={col}>{renderInlineMarkdown(row[col] || "", "td-" + i + "-" + n + "-" + col)}</td>)}</tr>)}</tbody></table></div>);
       continue;
     }
-    const heading = line.match(/^(#{1,6})\\s+(.+)$/);
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
     if (heading) { const Tag = ("h" + Math.min(heading[1].length + 1, 6)) as "h2" | "h3" | "h4" | "h5" | "h6"; blocks.push(<Tag key={"heading-" + i}>{renderInlineMarkdown(heading[2], "heading-" + i)}</Tag>); i++; continue; }
-    if (/^\\s*>/.test(line)) {
+    if (/^\s*>/.test(line)) {
       const quote: string[] = [];
-      while (i < lines.length && /^\\s*>/.test(lines[i].trim())) quote.push(lines[i++].trim().replace(/^>\\s?/, ""));
+      while (i < lines.length && /^\s*>/.test(lines[i].trim())) quote.push(lines[i++].trim().replace(/^>\s?/, ""));
       blocks.push(<blockquote key={"quote-" + i}>{quote.map((item, n) => <p key={n}>{renderInlineMarkdown(item, "quote-" + i + "-" + n)}</p>)}</blockquote>);
       continue;
     }
-    if (/^\\s*[-*+]\\s+/.test(line) || /^\\s*\\d+[.)]\\s+/.test(line)) {
-      const ordered = /^\\s*\\d+[.)]\\s+/.test(line);
+    if (/^\s*[-*+]\s+/.test(line) || /^\s*\d+[.)]\s+/.test(line)) {
+      const ordered = /^\s*\d+[.)]\s+/.test(line);
       const items: string[] = [];
-      while (i < lines.length && (/^\\s*[-*+]\\s+/.test(lines[i]) || /^\\s*\\d+[.)]\\s+/.test(lines[i]))) items.push(lines[i++].replace(/^\\s*(?:[-*+]\\s+|\\d+[.)]\\s+)/, ""));
+      while (i < lines.length && (/^\s*[-*+]\s+/.test(lines[i]) || /^\s*\d+[.)]\s+/.test(lines[i]))) items.push(lines[i++].replace(/^\s*(?:[-*+]\s+|\d+[.)]\s+)/, ""));
       const List = ordered ? "ol" : "ul";
       blocks.push(<List key={"list-" + i}>{items.map((item, n) => <li key={n}>{renderInlineMarkdown(item, "list-" + i + "-" + n)}</li>)}</List>);
       continue;
     }
     const paragraph = [line];
     i++;
-    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\\s|\\x60\\x60\\x60|---+|\\*\\*\\*|___|\\s*>|\\s*[-*+]\\s+|\\s*\\d+[.)]\\s+)/.test(lines[i].trim()) && !(lines[i].trim().startsWith("|") && i + 1 < lines.length && /^\\s*\\|?\\s*:?-{2,}/.test(lines[i + 1]))) paragraph.push(lines[i++].trim());
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\x60\x60\x60|---+|\*\*\*|___|\s*>|\s*[-*+]\s+|\s*\d+[.)]\s+)/.test(lines[i].trim()) && !(lines[i].trim().startsWith("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1]))) paragraph.push(lines[i++].trim());
     blocks.push(<p key={"p-" + i}>{renderInlineMarkdown(paragraph.join(" "), "p-" + i)}</p>);
   }
   return <div className="answer-markdown">{blocks}</div>;
