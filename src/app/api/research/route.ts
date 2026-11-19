@@ -9,6 +9,7 @@ const config = {
 } as const;
 
 type CompatibleProvider = keyof typeof config;
+type HistoryEntry = { role: "assistant" | "user"; content: string };
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +18,7 @@ export async function POST(request: Request) {
     const apiKey = typeof body.apiKey === "string" ? body.apiKey.trim() : "";
     const model = typeof body.model === "string" ? body.model.trim() : "";
     const question = typeof body.question === "string" ? body.question.trim() : "";
-    const history = Array.isArray(body.history)
+    const history: HistoryEntry[] = Array.isArray(body.history)
       ? body.history.slice(-24).flatMap((item: unknown) => {
           if (typeof item !== "object" || item === null) return [];
           const entry = item as Record<string, unknown>;
