@@ -71,6 +71,7 @@ export default function Home() {
   const [apiKey, setApiKey] = useState("");
   const [apiKeys, setApiKeys] = useState<ProviderKey[]>([]);
   const [apiChain, setApiChain] = useState<{ providerId: string; keyId: string }[]>([]);
+  const [apiChainReady, setApiChainReady] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
@@ -109,11 +110,12 @@ export default function Home() {
         window.sessionStorage.setItem("axes:api-chain", JSON.stringify(initial));
       }
     } catch { setApiChain([]); }
+    setApiChainReady(true);
   }, []);
 
   useEffect(() => {
-    window.sessionStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
-  }, [apiChain]);
+    if (apiChainReady) window.sessionStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
+  }, [apiChain, apiChainReady]);
 
   function addToChain(providerId: string, keyId: string) {
     setApiChain((old) => old.length >= 6 || old.some((item) => item.providerId === providerId && item.keyId === keyId)
