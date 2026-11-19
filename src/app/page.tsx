@@ -75,6 +75,7 @@ export default function Home() {
   const [connectedProviders, setConnectedProviders] = useState<string[]>([]);
   const [researchAnswer, setResearchAnswer] = useState("");
   const [researchError, setResearchError] = useState("");
+  const [showApiFailureDialog, setShowApiFailureDialog] = useState(false);
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projectsReady, setProjectsReady] = useState(false);
@@ -176,13 +177,16 @@ export default function Home() {
     const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
     const preferred = connectedModels.find((item) => item.providerId === selectedModel.providerId && item.model === selectedModel.model && item.keyId === selectedModel.keyId);
     const candidates: ModelOption[] = [];
-    if (preferred) candidates.push(preferred);
+    const addCandidate = (candidate: ModelOption) => {
+      if (!candidates.some((item) => item.providerId === candidate.providerId && item.keyId === candidate.keyId && item.model === candidate.model)) candidates.push(candidate);
+    };
+    if (preferred) addCandidate(preferred);
     for (const provider of providers) {
       const providerModels = connectedModels.filter((item) => item.providerId === provider.id);
       const keyIds = Array.from(new Set(providerModels.map((item) => item.keyId).filter((id): id is string => Boolean(id))));
       for (const keyId of keyIds) {
-        const candidate = chooseResearchModel(providerModels.filter((item) => item.keyId === keyId));
-        if (candidate && !candidates.some((item) => item.providerId === candidate.providerId && item.keyId === candidate.keyId)) candidates.push(candidate);
+        const best = chooseResearchModel(providerModels.filter((item) => item.keyId === keyId));
+        if (best) addCandidate(best);
       }
     }
     if (!candidates.length) {
@@ -238,6 +242,7 @@ export default function Home() {
           lastError = error instanceof Error ? error.message : `${candidate.provider} request failed.`;
         }
       }
+      setShowApiFailureDialog(true);
       throw new Error(lastError);
     } catch (error) {
       setResearchError(error instanceof Error ? error.message : "Could not get a response from connected providers.");
@@ -302,7 +307,7 @@ export default function Home() {
                 <div className="composer-controls">
                   <button className="mode-select" type="button"><Orbit size={14}/>Chat mode</button>
                   <div className="model-wrap"><button className="model-select" onClick={() => setModelOpen(!modelOpen)}><span className={"model-mark "+selectedModel.tone}>{selectedModel.mark}</span><span>{selectedModel.model}</span><ChevronDown size={13}/></button>
-                    {modelOpen && <div className="model-menu">{models.map((m) => <button key={m.model} onClick={() => {setSelectedModel(m);setModelOpen(false);}}><span className={"model-mark "+m.tone}>{m.mark}</span><span><b>{m.model}</b><small>{m.provider}</small></span>{selectedModel.model === m.model && <Check size={14}/>}</button>)}</div>}
+                    {modelOpen && <div className="model-menu">{models.map((m) => <button key={m.providerId + ":" + (m.keyId || "none") + ":" + m.model} onClick={() => {setSelectedModel(m);setModelOpen(false);}}><span className={"model-mark "+m.tone}>{m.mark}</span><span><b>{m.model}</b><small>{m.provider}</small></span>{selectedModel.providerId === m.providerId && selectedModel.keyId === m.keyId && selectedModel.model === m.model && <Check size={14}/>}</button>)}</div>}
                   </div>
                   <button className="send-button" disabled={!prompt.trim()} aria-label="Send message" onClick={() => startResearch()}><ArrowUp size={17}/></button>
                 </div>
@@ -319,5 +324,6 @@ export default function Home() {
         </div>
       </div>
     </section>
+    {showApiFailureDialog && <div className="api-failure-overlay" role="dialog" aria-modal="true" aria-labelledby="api-failure-title"><div className="api-failure-dialog"><span className="settings-card-icon"><KeyRound size={19}/></span><h2 id="api-failure-title">All API keys failed</h2><p>AXES AI tried every connected key, but none returned an answer. Check your keys, account credits, model access, and provider status, or add another key.</p><div className="settings-actions"><button className="settings-save" onClick={() => {setShowApiFailureDialog(false);setActiveNav("Settings");}}>Open API settings</button><button className="settings-remove" onClick={() => setShowApiFailureDialog(false)}>Dismiss</button></div></div></div>}
   </main>;
 }
