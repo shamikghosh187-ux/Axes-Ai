@@ -374,7 +374,7 @@ export default function Home() {
   }, [apiChain, apiChainReady]);
 
   function saveProjectTitle(projectId: string) {
-    const title = renameDraft.replace(/\\s+/g, " ").trim();
+    const title = renameDraft.replace(/\s+/g, " ").trim();
     if (title) setProjects((old) => old.map((item) => item.id === projectId ? { ...item, title } : item));
     setRenamingProjectId(null);
     setRenameDraft("");
