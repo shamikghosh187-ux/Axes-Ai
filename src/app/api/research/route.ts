@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     let response: Response;
     if (provider === "gemini") {
       response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(60000),
+        method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(researchMode ? 120000 : 60000),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
           ...(researchMode ? { tools: [{ google_search: {} }] } : {}),
