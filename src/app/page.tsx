@@ -529,6 +529,26 @@ export default function Home() {
               : item));
             if (end < answer.length) await new Promise((resolve) => window.setTimeout(resolve, 18));
           }
+          // Generate a semantic title from the first message using the same provider/model.
+          // Existing chats are only retitled when this is their first turn.
+          if (previousTurns.length === 0) {
+            try {
+              const titleResponse = await fetch("/api/research/title", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, message: question }),
+              });
+              const titleData = await titleResponse.json().catch(() => ({}));
+              if (titleResponse.ok && typeof titleData.title === "string" && titleData.title.trim()) {
+                const generatedTitle = titleData.title.trim();
+                setProjects((old) => old.map((item) => item.id === projectId
+                  ? { ...item, title: generatedTitle, updatedAt: Date.now() }
+                  : item));
+              }
+            } catch {
+              // A title failure must never interrupt a successful answer.
+            }
+          }
           return;
         } catch (error) {
           lastError = error instanceof Error ? error.message : `${candidate.provider} request failed.`;
