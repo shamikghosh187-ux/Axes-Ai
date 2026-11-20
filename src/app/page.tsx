@@ -44,7 +44,7 @@ function renderAnswerMarkdown(source: string): ReactNode {
     return <div className="answer-markdown"><div className="answer-table-wrap"><table><thead><tr><th>Criterion</th><th>Points</th><th>What earns marks</th><th>Common deductions</th></tr></thead><tbody>{rubricRows.map((row, index) => <tr key={"rubric-" + index}><td>{renderInlineMarkdown(row[0], "rubric-title-" + index)}</td><td>{renderInlineMarkdown(row[1] || "", "rubric-points-" + index)}</td><td>{renderInlineMarkdown(row[2] || "", "rubric-evidence-" + index)}</td><td>{renderInlineMarkdown(row[3] || "", "rubric-deductions-" + index)}</td></tr>)}</tbody></table></div></div>;
   }
 
-  const normalizedSource = source.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n\n").replace(/\s*•\s*/g, "\n- ");
+  const hasMarkdownTable = /^\s*\|.*\|\s*\n\s*\|?\s*:?-{2,}/m.test(source);\n  const pipeNormalized = hasMarkdownTable ? source : source.replace(/\s+\|\s+/g, "\n\n");\n  const normalizedSource = pipeNormalized.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n\n").replace(/\s*•\s*/g, "\n- ");
   const lines = normalizedSource.split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
@@ -57,7 +57,7 @@ function renderAnswerMarkdown(source: string): ReactNode {
       i++;
       while (i < lines.length && !/^\x60\x60\x60/.test(lines[i].trim())) code.push(lines[i++]);
       i++;
-      blocks.push(<pre key={"code-" + i} data-language={language}><code>{code.join("\n")}</code></pre>);
+      blocks.push(<div className="answer-code-block" key={"code-" + i}><div className="answer-code-toolbar"><span>{language || "CODE"}</span><button type="button" onClick={() => { void navigator.clipboard.writeText(code.join("\n")); }}>Copy code</button></div><pre data-language={language}><code>{code.join("\n")}</code></pre></div>);
       continue;
     }
     if (/^(---+|\*\*\*|___)$/.test(line)) { blocks.push(<hr key={"hr-" + i++}/>); continue; }
@@ -81,8 +81,8 @@ function renderAnswerMarkdown(source: string): ReactNode {
           const flattened = candidate.split("|").map(cell => cell.trim()).filter(Boolean);
           if (flattened.length >= headers.length && flattened.length % headers.length === 0) {
             for (let cell = 0; cell < flattened.length; cell += headers.length) rows.push(flattened.slice(cell, cell + headers.length));
-            i++;
-          }
+            }
+          i++;
         }
         break;
       }
