@@ -927,7 +927,7 @@ export default function Home() {
               <div className="chat-composer">
                 <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key === "Enter" && !e.shiftKey){e.preventDefault();startResearch();}}} placeholder="Message AXES AI…" rows={2}/>
                 <div className="chat-composer-bottom">
-                  <div className="chat-composer-tools"><button type="button" title="Attach files"><Paperclip size={16}/></button><button type="button" title="Web search"><Globe2 size={16}/></button><button type="button" className={activeResearchMode ? "chat-research-toggle active" : "chat-research-toggle"} aria-pressed={activeResearchMode} onClick={toggleChatResearchMode} title="Toggle research mode"><Microscope size={14}/><span>{activeResearchMode ? "Research on" : "Research"}</span></button><span>Shift + Enter for a new line</span></div>
+                  <div className="chat-composer-tools"><button type="button" title="Attach files"><Paperclip size={16}/></button><button type="button" className={activeResearchMode ? "chat-research-toggle active" : "chat-research-toggle"} aria-pressed={activeResearchMode} onClick={toggleChatResearchMode} title="Toggle live web search"><Globe2 size={14}/><span>{activeResearchMode ? "Web search on" : "Web search"}</span></button><span>Shift + Enter for a new line</span></div>
                   <button className="chat-send-button" disabled={!prompt.trim() || researching} onClick={()=>startResearch()} aria-label="Send message"><ArrowUp size={18}/></button>
                 </div>
               </div>
