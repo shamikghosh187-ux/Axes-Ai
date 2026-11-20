@@ -524,3 +524,26 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .retry-answer-button:hover:not(:disabled){background:rgba(239,137,73,.16);border-color:rgba(239,137,73,.65)}
 .retry-answer-button:disabled{opacity:.45;cursor:not-allowed}
 
+/* Education-first personality and policy settings */
+.persona-mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
+.persona-mode-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;padding:14px 15px;border:1px solid #303831;border-radius:11px;background:#101512;color:#dce2dd;text-align:left;cursor:pointer;transition:border-color .18s,background .18s,transform .18s}
+.persona-mode-card:hover{border-color:#795333;background:#171d18;transform:translateY(-1px)}
+.persona-mode-card.selected{border-color:#c17a43;background:linear-gradient(120deg,#2a2018,#171b17);box-shadow:inset 0 0 0 1px #c17a4322}
+.persona-mode-top{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px;font-size:13px}
+.persona-mode-top svg{color:#e9a66c;flex:none}
+.persona-mode-card>small{color:#e2a66d;font-size:10px;font-weight:650;letter-spacing:.03em}
+.persona-mode-card>span:last-child{color:#929d95;font-size:11px;line-height:1.55}
+.persona-current-note{margin-top:13px;padding:10px 12px;border:1px solid #303831;border-radius:8px;background:#141915;color:#aab4ac;font-size:11px}
+.persona-current-note b{color:#efb27b}
+.policy-rule-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:16px}
+.policy-rule-list>div{display:flex;flex-direction:column;gap:5px;padding:12px;border:1px solid #303831;border-radius:9px;background:#111613}
+.policy-rule-list b{color:#e7ece8;font-size:12px}
+.policy-rule-list span{color:#929d95;font-size:11px;line-height:1.6}
+.policy-footnote{margin-top:12px;padding:11px 12px;border-left:2px solid #d88a4c;background:#211a14;color:#d6b18f;font-size:11px;line-height:1.6}
+.policy-document{margin-top:12px;padding:17px;border:1px solid #303831;border-radius:10px;background:#101512}
+.policy-document h3{margin:14px 0 6px;color:#e9b17e;font-size:13px}
+.policy-document h3:first-child{margin-top:0}
+.policy-document p{margin:0;color:#aab4ac;font-size:11px;line-height:1.8}
+.persona-mode-card:focus-visible{outline:2px solid #e99b5e;outline-offset:2px}
+@media(max-width:700px){.persona-mode-grid,.policy-rule-list{grid-template-columns:1fr}.persona-mode-card{padding:13px}}
+
