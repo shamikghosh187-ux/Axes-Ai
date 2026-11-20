@@ -5,7 +5,7 @@ import {
   Atom, ArrowUp, ChevronDown, Plus, Search, FileText,
   Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
   PanelLeftClose, Orbit, Library, SlidersHorizontal,
-  MoreHorizontal, Check, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download, RefreshCw, Microscope, X
+  MoreHorizontal, Check, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download, RefreshCw, Microscope, X, GraduationCap, Zap, BookOpen, ClipboardCheck, Code2
 } from "lucide-react";
 
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
@@ -747,15 +747,15 @@ export default function Home() {
               <div className="settings-card-title"><span className="settings-card-icon"><Sparkles size={17}/></span><div><h2>Assistant modes</h2><p>Change the explanation style. Every mode follows the same education and safety rules.</p></div></div>
               <div className="persona-mode-grid">
                 {[
-                  {id:"bro",name:"Bro Mode",tag:"Casual & friendly",desc:"Relaxed explanations, everyday examples and light humour."},
-                  {id:"professor",name:"Professor Mode",tag:"Deep & academic",desc:"Precise terminology, theory, derivations and academic depth."},
-                  {id:"god",name:"God Mode",tag:"Advanced learner",desc:"Maximum depth, connected concepts and challenging insights — never a safety bypass."},
-                  {id:"teacher",name:"Teacher Mode",tag:"Clear & supportive",desc:"Step-by-step lessons, examples and checks for understanding."},
-                  {id:"exam-coach",name:"Exam Coach",tag:"Marks & practice",desc:"Exam-focused explanations, model answers and practice questions."},
-                  {id:"researcher",name:"Researcher Mode",tag:"Evidence first",desc:"Structured analysis, careful uncertainty and source-aware research."},
-                  {id:"coding-mentor",name:"Coding Mentor",tag:"Build & understand",desc:"Explain code, debug thoughtfully and teach good engineering habits."},
-                  {id:"socratic",name:"Socratic Tutor",tag:"Learn by thinking",desc:"Guiding questions and hints before revealing a full solution."}
-                ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>setPersonaMode(mode.id)}><span className="persona-mode-top"><b>{mode.name}</b>{personaMode===mode.id&&<Check size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
+                  {id:"bro",name:"Bro Mode",tag:"Casual & friendly",desc:"Relaxed explanations, everyday examples and light humour.",icon:<Atom size={19}/>},
+                  {id:"professor",name:"Professor Mode",tag:"Deep & academic",desc:"Precise terminology, theory, derivations and academic depth.",icon:<GraduationCap size={19}/>},
+                  {id:"god",name:"God Mode",tag:"Advanced learner",desc:"Maximum depth, connected concepts and challenging insights — never a safety bypass.",icon:<Zap size={19}/>},
+                  {id:"teacher",name:"Teacher Mode",tag:"Clear & supportive",desc:"Step-by-step lessons, examples and checks for understanding.",icon:<BookOpen size={19}/>},
+                  {id:"exam-coach",name:"Exam Coach",tag:"Marks & practice",desc:"Exam-focused explanations, model answers and practice questions.",icon:<ClipboardCheck size={19}/>},
+                  {id:"researcher",name:"Researcher Mode",tag:"Evidence first",desc:"Structured analysis, careful uncertainty and source-aware research.",icon:<Microscope size={19}/>},
+                  {id:"coding-mentor",name:"Coding Mentor",tag:"Build & understand",desc:"Explain code, debug thoughtfully and teach good engineering habits.",icon:<Code2 size={19}/>},
+                  {id:"socratic",name:"Socratic Tutor",tag:"Learn by thinking",desc:"Guiding questions and hints before revealing a full solution.",icon:<BrainCircuit size={19}/>}
+                ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>setPersonaMode(mode.id)}><span className="persona-mode-top"><span className="persona-mode-icon" aria-hidden="true">{mode.icon}</span><b>{mode.name}</b>{personaMode===mode.id&&<Check className="persona-mode-check" size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
               </div>
               <div className="persona-current-note">Active mode: <b>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · Applies to new answers and is saved on this device.</div>
             </section>
