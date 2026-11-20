@@ -695,6 +695,7 @@ export default function Home() {
           {activeNav === "Settings" ? <div className="settings-page">
             <nav className="settings-nav" aria-label="Settings navigation">
               <div className="settings-nav-heading"><span className="settings-kicker">PREFERENCES</span><b>Settings</b></div>
+              <button type="button" className="settings-close-button" aria-label="Close settings" onClick={() => setActiveNav("New chat")}><X size={17}/></button>
               <a href="#settings-overview"><SlidersHorizontal size={15}/> Overview</a>
               <a href="#settings-providers"><BrainCircuit size={15}/> AI connections</a>
               <a href="#settings-routing"><Orbit size={15}/> API chain</a>
