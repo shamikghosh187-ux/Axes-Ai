@@ -517,3 +517,10 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .message-edit-actions .message-edit-save{border-color:transparent;background:#df8750;color:#17120e;font-weight:600}
 .message-edit-actions button:disabled{opacity:.45;cursor:not-allowed}
 
+/* AXES Research Mode and retry controls */
+.mode-select.research-mode-active{border-color:rgba(239,137,73,.55);background:rgba(239,137,73,.12);color:#f0a06b}
+.turn-error-block{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.retry-answer-button{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(239,137,73,.34);border-radius:7px;background:rgba(239,137,73,.08);color:#e9a06e;font-size:11px;font-weight:600;cursor:pointer;transition:background .18s ease,border-color .18s ease}
+.retry-answer-button:hover:not(:disabled){background:rgba(239,137,73,.16);border-color:rgba(239,137,73,.65)}
+.retry-answer-button:disabled{opacity:.45;cursor:not-allowed}
+
