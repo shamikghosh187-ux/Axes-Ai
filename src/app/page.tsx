@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
-type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[]; personaMode?: string };
+type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[]; personaMode?: string; researchMode?: boolean };
 
 function makeConversationTitle(message: string): string {
   const clean = message.replace(/\s+/g, " ").trim();
@@ -251,6 +251,7 @@ export default function Home() {
 
   const activeProject = projects.find((project) => project.id === currentProjectId);
   const activePersonaMode = activeProject?.personaMode || personaMode;
+  const activeResearchMode = activeProject?.researchMode ?? researchMode;
 
   const latestTurnId = turns.length ? turns[turns.length - 1].id : undefined;
 
@@ -397,6 +398,16 @@ export default function Home() {
   useEffect(() => {
     if (apiChainReady) window.localStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
   }, [apiChain, apiChainReady]);
+
+  function toggleChatResearchMode() {
+    const nextMode = !activeResearchMode;
+    if (currentProjectId) {
+      setProjects((old) => old.map((project) => project.id === currentProjectId ? { ...project, researchMode: nextMode, updatedAt: Date.now() } : project));
+    } else {
+      setResearchMode(nextMode);
+      window.localStorage.setItem("axes:research-mode", String(nextMode));
+    }
+  }
 
   function selectChatPersonaMode(mode: string) {
     if (currentProjectId) {
@@ -575,6 +586,7 @@ export default function Home() {
       model: first.model,
       turns: [],
       personaMode: existingProject?.personaMode || personaMode,
+      researchMode: existingProject?.researchMode ?? researchMode,
       updatedAt: now,
     };
     setSelectedModel(first);
@@ -619,7 +631,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode, personaMode: existingProject?.personaMode || personaMode }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode: existingProject?.researchMode ?? researchMode, personaMode: existingProject?.personaMode || personaMode }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -812,7 +824,7 @@ export default function Home() {
                   <button className="send-button" disabled={!prompt.trim()} aria-label="Send message" onClick={() => startResearch()}><ArrowUp size={17}/></button>
                 </div>
               </div>
-              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. {researchMode ? "Live web search and linked sources work with compatible Gemini and Claude models. Provider search charges may apply." : ""} Chats and API keys are saved in this browser on this device.</div>
+              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. {activeResearchMode ? "Live web search and linked sources work with compatible Gemini and Claude models. Provider search charges may apply." : ""} Chats and API keys are saved in this browser on this device.</div>
             </div>
             <div className="workspace-footer"><span><span className="footer-dot"/> Ready to explore</span><span>AI, on your terms <b>·</b> AXES AI</span></div>
           </> : <div className="research-session">
@@ -856,7 +868,7 @@ export default function Home() {
                   <div className="assistant-message-content">
                     <div className="assistant-name">AXES AI <span>{turn.model || selectedModel.model}</span></div>
                     {researching && !turn.answer && !turn.error && turn.id === turns[turns.length - 1]?.id
-                      ? <div className="thinking-indicator"><i/><i/><i/> <span>{researchMode ? "Building research brief…" : "Thinking…"}</span></div>
+                      ? <div className="thinking-indicator"><i/><i/><i/> <span>{activeResearchMode ? "Building research brief…" : "Thinking…"}</span></div>
                       : turn.answer ? <div className="assistant-answer-text">{renderAnswerMarkdown(turn.answer)}</div>
                       : turn.error ? <div className="turn-error-block"><p className="research-error">{turn.error}</p><button type="button" className="retry-answer-button" disabled={researching} onClick={() => startResearch(turn.question, { replaceFromTurnId: turn.id })}><RefreshCw size={13}/> Retry response</button></div>
                       : <p className="assistant-waiting-copy">Waiting for response…</p>}
@@ -871,7 +883,7 @@ export default function Home() {
               <div className="chat-composer">
                 <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key === "Enter" && !e.shiftKey){e.preventDefault();startResearch();}}} placeholder="Message AXES AI…" rows={2}/>
                 <div className="chat-composer-bottom">
-                  <div className="chat-composer-tools"><button type="button" title="Attach files"><Paperclip size={16}/></button><button type="button" title="Web search"><Globe2 size={16}/></button><button type="button" className={researchMode ? "chat-research-toggle active" : "chat-research-toggle"} aria-pressed={researchMode} onClick={() => setResearchMode((value) => !value)} title="Toggle research mode"><Microscope size={14}/><span>{researchMode ? "Research on" : "Research"}</span></button><span>Shift + Enter for a new line</span></div>
+                  <div className="chat-composer-tools"><button type="button" title="Attach files"><Paperclip size={16}/></button><button type="button" title="Web search"><Globe2 size={16}/></button><button type="button" className={activeResearchMode ? "chat-research-toggle active" : "chat-research-toggle"} aria-pressed={activeResearchMode} onClick={toggleChatResearchMode} title="Toggle research mode"><Microscope size={14}/><span>{researchMode ? "Research on" : "Research"}</span></button><span>Shift + Enter for a new line</span></div>
                   <button className="chat-send-button" disabled={!prompt.trim() || researching} onClick={()=>startResearch()} aria-label="Send message"><ArrowUp size={18}/></button>
                 </div>
               </div>
