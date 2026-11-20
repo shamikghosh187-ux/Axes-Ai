@@ -218,6 +218,7 @@ export default function Home() {
   const [turns, setTurns] = useState<ResearchTurn[]>([]);
   const [researching, setResearching] = useState(false);
   const [researchMode, setResearchMode] = useState(false);
+  const [personaMode, setPersonaMode] = useState("teacher");
   const [apiProvider, setApiProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
   const [apiKeys, setApiKeys] = useState<ProviderKey[]>([]);
@@ -269,6 +270,8 @@ export default function Home() {
     try {
       setMemoryEnabled(window.localStorage.getItem("axes:memory-enabled") !== "false");
       setResearchMode(window.localStorage.getItem("axes:research-mode") === "true");
+      const savedPersona = window.localStorage.getItem("axes:persona");
+      setPersonaMode(savedPersona && ["bro","professor","god","teacher","exam-coach","researcher","coding-mentor","socratic"].includes(savedPersona) ? savedPersona : "teacher");
       const savedMemoryNotes = window.localStorage.getItem("axes:memory-notes");
       setMemoryNotes(savedMemoryNotes === null ? DEFAULT_USER_MEMORY : savedMemoryNotes);
       const savedProjects = window.localStorage.getItem("axes:research-projects");
@@ -353,6 +356,11 @@ export default function Home() {
     if (!projectsReady) return;
     window.localStorage.setItem("axes:research-mode", String(researchMode));
   }, [researchMode, projectsReady]);
+
+  useEffect(() => {
+    if (!projectsReady) return;
+    window.localStorage.setItem("axes:persona", personaMode);
+  }, [personaMode, projectsReady]);
 
   useEffect(() => {
     if (!projectsReady) return;
@@ -594,7 +602,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode, personaMode }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -718,7 +726,45 @@ export default function Home() {
               <textarea id="axes-memory-notes" className="memory-notes-input" value={memoryNotes} onChange={(event) => setMemoryNotes(event.target.value)} placeholder="Add preferences, ongoing projects, goals, or other context you want AXES AI to remember…" rows={5} disabled={!memoryEnabled}/>
               <div className="memory-footnote">Memory is stored locally in this browser alongside your saved chats. It is not synced between devices. Do not store passwords or API keys here.</div>
             </section>
-            <div className="settings-note"><span className="settings-kicker">LOCAL DATA & PRIVACY</span><br/>Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Clearing browser data or removing a key will erase that local copy.</div>
+
+            <section className="settings-card persona-settings-card">
+              <div className="settings-section-label"><span className="settings-kicker">05 · PERSONALITY</span><span>Choose how AXES AI teaches</span></div>
+              <div className="settings-card-title"><span className="settings-card-icon"><Sparkles size={17}/></span><div><h2>Assistant modes</h2><p>Change the explanation style. Every mode follows the same education and safety rules.</p></div></div>
+              <div className="persona-mode-grid">
+                {[
+                  {id:"bro",name:"Bro Mode",tag:"Casual & friendly",desc:"Relaxed explanations, everyday examples and light humour."},
+                  {id:"professor",name:"Professor Mode",tag:"Deep & academic",desc:"Precise terminology, theory, derivations and academic depth."},
+                  {id:"god",name:"God Mode",tag:"Advanced learner",desc:"Maximum depth, connected concepts and challenging insights — never a safety bypass."},
+                  {id:"teacher",name:"Teacher Mode",tag:"Clear & supportive",desc:"Step-by-step lessons, examples and checks for understanding."},
+                  {id:"exam-coach",name:"Exam Coach",tag:"Marks & practice",desc:"Exam-focused explanations, model answers and practice questions."},
+                  {id:"researcher",name:"Researcher Mode",tag:"Evidence first",desc:"Structured analysis, careful uncertainty and source-aware research."},
+                  {id:"coding-mentor",name:"Coding Mentor",tag:"Build & understand",desc:"Explain code, debug thoughtfully and teach good engineering habits."},
+                  {id:"socratic",name:"Socratic Tutor",tag:"Learn by thinking",desc:"Guiding questions and hints before revealing a full solution."}
+                ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>setPersonaMode(mode.id)}><span className="persona-mode-top"><b>{mode.name}</b>{personaMode===mode.id&&<Check size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
+              </div>
+              <div className="persona-current-note">Active mode: <b>{personaMode}</b> · Applies to new answers and is saved on this device.</div>
+            </section>
+            <section className="settings-card education-policy-card">
+              <div className="settings-section-label"><span className="settings-kicker">06 · TRUST & SAFETY</span><span>Education-first by design</span></div>
+              <div className="settings-card-title"><span className="settings-card-icon"><ShieldCheck size={17}/></span><div><h2>Education & safety policy</h2><p>AXES AI is designed for learning, research, creativity and responsible building.</p></div></div>
+              <div className="policy-rule-list">
+                <div><b>Education-only purpose</b><span>School subjects, science, technology, research, writing, languages and constructive creativity are welcome.</span></div>
+                <div><b>No mature or explicit content</b><span>Sexually explicit material, pornography, erotic roleplay and adult-content requests are not allowed.</span></div>
+                <div><b>No harmful instructions</b><span>Requests that facilitate violence, weapons, self-harm, dangerous challenges, illegal activity or abuse are refused.</span></div>
+                <div><b>Safe educational discussion</b><span>Age-appropriate health, biology, history, safety and current-events education can be discussed without graphic or instructional harmful detail.</span></div>
+                <div><b>Respect & privacy</b><span>No harassment, hate, exploitation, doxxing or requests to expose private information. Never put passwords or API keys in memory notes.</span></div>
+              </div>
+              <div className="policy-footnote">Safety rules apply to every personality mode, including God Mode. No mode can disable or override them.</div>
+            </section>
+            <section className="settings-card terms-policy-card">
+              <div className="settings-section-label"><span className="settings-kicker">07 · TERMS & POLICIES</span><span>Plain-language product rules</span></div>
+              <div className="policy-document"><h3>Terms of Use</h3><p>By using AXES AI, you agree to use it for lawful, educational and constructive purposes. You must not request, create, share or use the service for mature or explicit content, exploitation, harassment, violence, self-harm facilitation, dangerous wrongdoing or illegal activity. Do not attempt to bypass safety controls. You are responsible for reviewing AI-generated work, checking important facts and following your school, workplace and local rules.</p>
+                <h3>Privacy Notice</h3><p>In this version, saved chats, memory notes, selected modes and API keys are stored in your browser on this device. They are not synced to an AXES account by this app. When you send a prompt, the prompt and relevant chat context are sent to the AI provider you selected, together with its API key, to generate a response. Research mode may send queries to the connected provider search service. Provider privacy and retention practices are controlled by that provider; review its terms before connecting a key. Do not submit sensitive personal information.</p>
+                <h3>AI & Education Disclaimer</h3><p>AXES AI can make mistakes and is not a substitute for a qualified teacher, professional advice or verified primary sources. Use it as a learning aid, not as an unquestionable authority. Safety screening can make mistakes and cannot guarantee that every unsafe output will be blocked.</p>
+                <h3>Acceptable Use</h3><p>Allowed: age-appropriate learning, homework support, coding, science, history, language practice, research, study planning and positive creative projects. Not allowed: pornography or explicit sexual content, sexual exploitation, graphic violence, instructions for weapons or dangerous acts, self-harm instructions, criminal facilitation, hate or targeted abuse.</p>
+              </div>
+            </section>
+            <div className="settings-note"><span className="settings-kicker">LOCAL DATA & PRIVACY</span><br/>Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Prompts are sent to the selected AI provider when you use AXES AI. Clearing browser data or removing a key will erase that local copy.</div>
           </div> : messages.length === 0 ? <>
             <div className="welcome-eyebrow"><span className="status-dot"/> YOUR PERSONAL AI WORKSPACE</div>
             <div className="welcome-title"><h1>One space.<br/><em>Every model.</em></h1><p>Chat with different AI models, compare their answers, and find the right one for every task.</p></div>
