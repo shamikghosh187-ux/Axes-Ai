@@ -44,7 +44,9 @@ function renderAnswerMarkdown(source: string): ReactNode {
     return <div className="answer-markdown"><div className="answer-table-wrap"><table><thead><tr><th>Criterion</th><th>Points</th><th>What earns marks</th><th>Common deductions</th></tr></thead><tbody>{rubricRows.map((row, index) => <tr key={"rubric-" + index}><td>{renderInlineMarkdown(row[0], "rubric-title-" + index)}</td><td>{renderInlineMarkdown(row[1] || "", "rubric-points-" + index)}</td><td>{renderInlineMarkdown(row[2] || "", "rubric-evidence-" + index)}</td><td>{renderInlineMarkdown(row[3] || "", "rubric-deductions-" + index)}</td></tr>)}</tbody></table></div></div>;
   }
 
-  const hasMarkdownTable = /^\s*\|.*\|\s*\n\s*\|?\s*:?-{2,}/m.test(source);\n  const pipeNormalized = hasMarkdownTable ? source : source.replace(/\s+\|\s+/g, "\n\n");\n  const normalizedSource = pipeNormalized.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n\n").replace(/\s*•\s*/g, "\n- ");
+  const hasMarkdownTable = /^\s*\|.*\|\s*\n\s*\|?\s*:?-{2,}/m.test(source);
+  const pipeNormalized = hasMarkdownTable ? source : source.replace(/\s+\|\s+/g, "\n\n");
+  const normalizedSource = pipeNormalized.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n\n").replace(/\s*•\s*/g, "\n- ");
   const lines = normalizedSource.split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
