@@ -219,6 +219,7 @@ export default function Home() {
   const [researching, setResearching] = useState(false);
   const [researchMode, setResearchMode] = useState(false);
   const [personaMode, setPersonaMode] = useState("teacher");
+  const [chatModeMenuOpen, setChatModeMenuOpen] = useState(false);
   const [apiProvider, setApiProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
   const [apiKeys, setApiKeys] = useState<ProviderKey[]>([]);
@@ -805,7 +806,7 @@ export default function Home() {
               <div className="chat-model-wrap">
                 <span className="chat-brand-mark"><Atom size={16}/></span>
                 <span className="chat-product-name">AXES AI</span>
-                <span className="chat-mode-indicator" title="Personality mode currently used for new chat answers"><Sparkles size={13}/><span>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</span></span>
+                <div className="chat-mode-picker"><button type="button" className="chat-mode-indicator" title="Change the personality mode used for new answers" aria-haspopup="menu" aria-expanded={chatModeMenuOpen} onClick={() => setChatModeMenuOpen((open) => !open)}><Sparkles size={13}/><span>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</span><ChevronDown size={11}/></button>{chatModeMenuOpen && <div className="chat-mode-menu" role="menu" aria-label="Choose personality mode">{[{id:"bro",name:"Bro Mode",desc:"Casual and relatable"},{id:"professor",name:"Professor Mode",desc:"Academic and rigorous"},{id:"god",name:"God Mode",desc:"Deepest useful analysis"},{id:"teacher",name:"Teacher Mode",desc:"Patient step-by-step teaching"},{id:"exam-coach",name:"Exam Coach",desc:"Marks and exam preparation"},{id:"researcher",name:"Researcher Mode",desc:"Evidence-first investigation"},{id:"coding-mentor",name:"Coding Mentor",desc:"Build and debug with guidance"},{id:"socratic",name:"Socratic Tutor",desc:"Learn through guided questions"}].map((mode) => <button type="button" role="menuitemradio" aria-checked={personaMode===mode.id} key={mode.id} onClick={() => {window.localStorage.setItem("axes:persona",mode.id);setPersonaMode(mode.id);setChatModeMenuOpen(false);}}><span><b>{mode.name}</b><small>{mode.desc}</small></span>{personaMode===mode.id && <Check size={14}/>}</button>)}</div>}</div>
                 <span className="chat-toolbar-divider">/</span>
                 <button className="chat-model-button" type="button" onClick={() => setModelOpen(!modelOpen)}>
                   {selectedModel.model}<ChevronDown size={13}/>
