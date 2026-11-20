@@ -264,9 +264,17 @@ export default function Home() {
       setMemoryNotes(savedMemoryNotes === null ? DEFAULT_USER_MEMORY : savedMemoryNotes);
       const savedProjects = window.localStorage.getItem("axes:research-projects");
       const restoredProjects = savedProjects ? JSON.parse(savedProjects) as ResearchProject[] : [];
-      setProjects(restoredProjects);
-      if (restoredProjects.length) {
-        const latest = restoredProjects[0];
+      // Upgrade legacy titles that simply copied the first message. Preserve titles the user has already edited.
+      const migratedProjects = restoredProjects.map((project) => {
+        const firstMessage = getProjectTurns(project)[0]?.question?.trim() || "";
+        const savedTitle = (project.title || "").trim();
+        return firstMessage && savedTitle.toLowerCase() === firstMessage.toLowerCase()
+          ? { ...project, title: makeConversationTitle(firstMessage) }
+          : project;
+      });
+      setProjects(migratedProjects);
+      if (migratedProjects.length) {
+        const latest = migratedProjects[0];
         setCurrentProjectId(latest.id);
         setMessages(latest.questions || []);
         setTurns(getProjectTurns(latest));
