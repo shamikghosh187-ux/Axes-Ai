@@ -238,6 +238,8 @@ export default function Home() {
   const [renameDraft, setRenameDraft] = useState("");
   const [chatSearch, setChatSearch] = useState("");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [editingTurnId, setEditingTurnId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [memoryNotes, setMemoryNotes] = useState("");
   const chatThreadRef = useRef<HTMLDivElement>(null);
@@ -507,7 +509,7 @@ export default function Home() {
     if (!nextKeys.length) setConnectedProviders((old) => old.filter((id) => id !== apiProvider));
   }
 
-  async function startResearch(value = prompt) {
+  async function startResearch(value = prompt, options?: { replaceFromTurnId?: string }) {
     const question = value.trim();
     if (!question || researching) return;
     setShowApiFailureDialog(false);
@@ -546,7 +548,9 @@ export default function Home() {
     setSelectedModel(first);
     setCurrentProjectId(projectId);
     const pendingTurn: ResearchTurn = { id: crypto.randomUUID(), question, answer: "", model: first.model, provider: first.provider };
-    const previousTurns = existingProject ? getProjectTurns(existingProject) : [];
+    const allExistingTurns = existingProject ? getProjectTurns(existingProject) : [];
+    const replaceIndex = options?.replaceFromTurnId ? allExistingTurns.findIndex((turn) => turn.id === options.replaceFromTurnId) : -1;
+    const previousTurns = replaceIndex >= 0 ? allExistingTurns.slice(0, replaceIndex) : allExistingTurns;
     const currentChatHistory = previousTurns.slice(-8).flatMap((turn) => [
       { role: "user" as const, content: turn.question.slice(0, 1200) },
       ...(turn.answer ? [{ role: "assistant" as const, content: turn.answer.slice(0, 1600) }] : []),
@@ -563,12 +567,14 @@ export default function Home() {
       .slice(0, 6000) : "";
     setTurns([...previousTurns, pendingTurn]);
     setProjects((old) => existingProject
-      ? old.map((item) => item.id === projectId ? { ...item, questions: [...item.questions, question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
+      ? old.map((item) => item.id === projectId ? { ...item, questions: [...previousTurns.map((turn) => turn.question), question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
       : [{ ...newProject, turns: [pendingTurn] }, ...old]);
+    setEditingTurnId(null);
+    setEditDraft("");
     setPrompt("");
     setResearchAnswer("");
     setResearchError("");
-    setMessages((old) => [...old, question]);
+    setMessages([...previousTurns.map((turn) => turn.question), question]);
     setResearching(true);
 
     let lastError = "No connected provider could answer this message.";
@@ -751,7 +757,15 @@ export default function Home() {
             </div>
             <div className="chat-thread" ref={chatThreadRef}>
               {turns.map((turn, index) => <div className="chat-turn" key={turn.id} ref={index === turns.length - 1 ? latestTurnRef : undefined}>
-                <div className="user-message-row"><div className="user-message-bubble">{turn.question}</div></div>
+                <div className="user-message-row"><div className="user-message-bubble">
+                  {editingTurnId === turn.id ? <div className="message-edit-box">
+                    <textarea value={editDraft} onChange={(event) => setEditDraft(event.target.value)} rows={Math.min(8, Math.max(2, editDraft.split("\\n").length))} autoFocus aria-label="Edit your question"/>
+                    <div className="message-edit-actions">
+                      <button type="button" onClick={() => { setEditingTurnId(null); setEditDraft(""); }}>Cancel</button>
+                      <button type="button" className="message-edit-save" disabled={!editDraft.trim() || researching} onClick={() => startResearch(editDraft, { replaceFromTurnId: turn.id })}>Save &amp; regenerate</button>
+                    </div>
+                  </div> : <>{turn.question}<button type="button" className="message-edit-trigger" title="Edit question" aria-label="Edit question" onClick={() => { setEditingTurnId(turn.id); setEditDraft(turn.question); }}><FileText size={13}/><span>Edit</span></button></>}
+                </div></div>
                 <div className="assistant-message-row">
                   <div className="assistant-avatar"><Atom size={17}/></div>
                   <div className="assistant-message-content">
