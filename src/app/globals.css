@@ -676,6 +676,20 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .settings-page .persona-mode-card.selected .persona-mode-icon{border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.09);color:#fff}
 .settings-page .persona-mode-card small{margin-top:10px}
 
+/* In-chat personality switcher */
+.chat-mode-picker{position:relative;display:flex;align-items:center}
+.chat-mode-indicator{cursor:pointer;font:inherit}
+.chat-mode-indicator:hover{border-color:rgba(240,161,95,.4);background:rgba(240,161,95,.09)}
+.chat-mode-indicator:focus-visible{outline:2px solid #f0a15f;outline-offset:2px}
+.chat-mode-menu{position:absolute;top:calc(100% + 9px);left:0;z-index:30;display:grid;gap:3px;width:min(260px,78vw);max-height:min(420px,65vh);overflow:auto;padding:7px;border:1px solid #3a413b;border-radius:12px;background:#171b18;box-shadow:0 18px 55px #000a}
+.chat-mode-menu button{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:#e8ece7;text-align:left;cursor:pointer}
+.chat-mode-menu button:hover,.chat-mode-menu button[aria-checked="true"]{background:#252b24}
+.chat-mode-menu button>span{display:grid;gap:3px;min-width:0}
+.chat-mode-menu button b{font-size:11px;font-weight:650}
+.chat-mode-menu button small{font-size:10px;color:#929b93}
+.chat-mode-menu button>svg{flex:none;color:#fb923c}
+@media(max-width:640px){.chat-mode-menu{left:-42px;width:min(250px,82vw)}}
+ 
 /* Keep the active Settings personality visibly connected to chat. */
 
 .chat-mode-indicator{display:inline-flex;align-items:center;gap:6px;margin-left:10px;padding:6px 10px;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.045);color:#f0a15f;font-size:11px;font-weight:650;white-space:nowrap}
