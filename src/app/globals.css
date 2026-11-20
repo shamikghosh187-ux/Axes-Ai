@@ -281,6 +281,11 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .answer-markdown hr{height:1px;margin:22px 0;border:0;background:#303831}
 .answer-markdown code{padding:2px 5px;border:1px solid #343b35;border-radius:5px;background:#171d18;color:#ffc184;font-family:ui-monospace,SFMono-Regular,monospace;font-size:.9em}
 .answer-markdown pre{overflow:auto;margin:13px 0 17px;padding:14px 16px;border:1px solid #303831;border-radius:11px;background:#101411;color:#e7ece6;line-height:1.65}
+.answer-code-block{position:relative;margin:13px 0 17px;overflow:hidden;border:1px solid #303831;border-radius:11px;background:#101411}
+.answer-code-toolbar{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;border-bottom:1px solid #303831;color:#9aa59b;font-size:10px;letter-spacing:.08em}
+.answer-code-toolbar button{padding:4px 9px;border:1px solid #3b463d;border-radius:6px;background:#1a211b;color:#f2b77e;font-size:10px}
+.answer-code-toolbar button:hover{border-color:#a96a37;background:#241a13}
+.answer-code-block pre{margin:0;border:0;border-radius:0}
 .answer-markdown pre code{padding:0;border:0;background:transparent;color:inherit}
 .answer-markdown a{color:#f3ad6b;text-decoration:underline;text-underline-offset:3px}
 .answer-table-wrap{max-width:100%;margin:14px 0 18px;overflow-x:auto;border:1px solid #303831;border-radius:10px}
