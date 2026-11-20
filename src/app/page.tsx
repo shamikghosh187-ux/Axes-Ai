@@ -11,6 +11,22 @@ import {
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
 type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[] };
 
+function makeConversationTitle(message: string): string {
+  const clean = message.replace(/\s+/g, " ").trim();
+  const normalized = clean.toLowerCase().replace(/[!?.,]+$/g, "").trim();
+  if (/^(hey|hi|hello|heya|hii+|helo|good morning|good afternoon|good evening|what'?s up|sup|yo)(\s+(there|axes ai|everyone))?$/.test(normalized)) return "A Friendly Greeting";
+  if (/^(how are you|how's it going|how are you doing)$/.test(normalized)) return "A Friendly Check-in";
+  if (/^(thanks|thank you|thx|ty)$/.test(normalized)) return "A Quick Thank You";
+  if (/^(bye|goodbye|see you|see ya)$/.test(normalized)) return "A Quick Goodbye";
+  if (/^(who are you|what are you|introduce yourself)$/.test(normalized)) return "Getting to Know AXES AI";
+  if (/^(help|help me|i need help)$/.test(normalized)) return "Getting Some Help";
+  const withoutLead = clean.replace(/^(please\s+)?(explain|describe|teach me|help me understand|help me with|tell me about|what is|what are|how does|how do|write|create|make|build|solve|calculate|derive|summarize|compare|analyze|analyse)\s+/i, "").trim();
+  const topic = withoutLead || clean;
+  const title = topic.charAt(0).toUpperCase() + topic.slice(1);
+  return title.length > 48 ? title.slice(0, 45).trimEnd() + "…" : title;
+}
+
+
 function renderInlineMarkdown(value: string, keyPrefix: string): ReactNode[] {
   const pattern = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|\x60[^`]+\x60|\[[^\]]+\]\(https?:\/\/[^\s)]+\)|https?:\/\/[^\s]+)/g;
   return value.split(pattern).filter(Boolean).map((part, index) => {
@@ -449,7 +465,7 @@ export default function Home() {
     const now = Date.now();
     const newProject: ResearchProject = {
       id: projectId,
-      title: question.length > 72 ? question.slice(0, 69) + "…" : question,
+      title: makeConversationTitle(question),
       questions: [question],
       answer: "",
       model: first.model,
