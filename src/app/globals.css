@@ -474,6 +474,7 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .recent-label button{display:grid;place-items:center;width:23px;height:23px;border:0;border-radius:6px;background:transparent;color:#8c9494}
 .recent-label button:hover{background:#202323;color:#f1f3f2}
 .recent-list{display:flex;flex-direction:column;gap:2px;min-height:0;overflow-y:auto;overflow-x:hidden}
+.chat-history-search{display:flex;align-items:center;gap:8px;height:34px;margin:0 4px 8px;padding:0 9px;border:1px solid #303636;border-radius:8px;background:#191c1c;color:#818b8a}.chat-history-search:focus-within{border-color:#b96b35;box-shadow:0 0 0 2px #b96b3522}.chat-history-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#e8ecea;font-size:11px}.chat-history-search input::placeholder{color:#737d7c}.chat-history-search button{border:0;background:transparent;color:#9ba4a2;font-size:17px;line-height:1}.chat-history-empty{padding:12px 9px;color:#7e8886;font-size:11px}
 .recent-chat-row{position:relative;display:flex;align-items:center;min-width:0;height:38px;border-radius:8px;background:transparent;transition:background .14s}
 .recent-chat-row:hover{background:#1b1d1d}
 .recent-chat-row.selected{background:#242626}
