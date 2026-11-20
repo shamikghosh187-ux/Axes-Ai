@@ -666,3 +666,12 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
  .settings-page .api-chain-item{grid-template-columns:24px 26px minmax(0,1fr);}
  .settings-page .chain-item-actions{grid-column:1/-1;justify-content:flex-end;}
 }
+
+/* Personality mode icons: restrained monochrome, no emoji colours */
+.settings-page .persona-mode-top{display:flex;align-items:center;gap:10px;min-width:0}
+.settings-page .persona-mode-top>b{flex:1;min-width:0}
+.settings-page .persona-mode-icon{width:34px;height:34px;flex:0 0 34px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.13);border-radius:10px;background:rgba(255,255,255,.045);color:#e7e7e7}
+.settings-page .persona-mode-icon svg,.settings-page .persona-mode-check{color:currentColor;stroke:currentColor}
+.settings-page .persona-mode-check{color:#ededed;flex:0 0 auto}
+.settings-page .persona-mode-card.selected .persona-mode-icon{border-color:rgba(255,255,255,.24);background:rgba(255,255,255,.09);color:#fff}
+.settings-page .persona-mode-card small{margin-top:10px}
