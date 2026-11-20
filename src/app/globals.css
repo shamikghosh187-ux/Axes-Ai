@@ -626,3 +626,43 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
  .settings-main-content{padding:20px 14px 34px}
  .settings-main-content .settings-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Definitive Settings width repair: stretch content, never shrink cards to their intrinsic width */
+.settings-page{box-sizing:border-box;width:min(1440px,calc(100vw - 48px));max-width:none;grid-template-columns:260px minmax(0,1fr);}
+.settings-page>*{box-sizing:border-box;min-width:0;}
+.settings-page>.settings-main-content{box-sizing:border-box;width:100%;max-width:none;min-width:0;align-items:stretch;padding-left:clamp(22px,4vw,58px);padding-right:clamp(22px,4vw,58px);}
+.settings-page>.settings-main-content>*{box-sizing:border-box;width:100%;max-width:none;min-width:0;align-self:stretch;}
+.settings-page .provider-grid{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));}
+.settings-page .api-chain-card,.settings-page .settings-card,.settings-page .settings-section-intro,.settings-page .settings-hero{width:100%;max-width:none;min-width:0;}
+.settings-page .persona-mode-grid{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));}
+.settings-page .persona-mode-card{width:100%;min-width:0;min-height:150px;overflow-wrap:anywhere;}
+.settings-page .api-chain-list{width:100%;min-width:0;}
+.settings-page .api-chain-item{display:grid;grid-template-columns:30px 30px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-width:0;box-sizing:border-box;}
+.settings-page .chain-item-copy{display:flex;flex-direction:column;min-width:0;overflow:hidden;}
+.settings-page .chain-item-copy b,.settings-page .chain-item-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.settings-page .chain-item-actions{position:static;display:flex;flex:0 0 auto;align-items:center;justify-content:flex-end;gap:5px;min-width:max-content;}
+.settings-page .chain-item-actions button{position:static;flex:0 0 32px;width:32px;height:32px;display:grid;place-items:center;}
+.settings-page .chain-add-area,.settings-page .chain-add-list{width:100%;min-width:0;}
+.settings-page .chain-add-list{display:flex;flex-wrap:wrap;gap:7px;}
+@media(max-width:900px){
+ .settings-page{width:calc(100vw - 32px);grid-template-columns:220px minmax(0,1fr);}
+ .settings-page>.settings-main-content{padding-left:24px;padding-right:24px;}
+ .settings-page .settings-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .settings-page .persona-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .settings-page .api-chain-item{grid-template-columns:26px 28px minmax(0,1fr) auto;gap:7px;padding:9px;}
+ .settings-page .chain-item-actions{gap:3px;}
+ .settings-page .chain-item-actions button{width:28px;height:28px;flex-basis:28px;}
+}
+@media(max-width:620px){
+ .settings-page{width:calc(100vw - 20px);grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
+ .settings-page>.settings-main-content{padding:18px 14px 30px;}
+ .settings-page .persona-mode-grid,.settings-page .provider-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+ .settings-page .api-chain-item{grid-template-columns:25px 27px minmax(0,1fr) auto;}
+ .settings-page .chain-item-actions button{width:26px;height:26px;flex-basis:26px;}
+}
+@media(max-width:420px){
+ .settings-page .persona-mode-grid,.settings-page .provider-grid{grid-template-columns:1fr;}
+ .settings-page .api-chain-item{grid-template-columns:24px 26px minmax(0,1fr);}
+ .settings-page .chain-item-actions{grid-column:1/-1;justify-content:flex-end;}
+}
