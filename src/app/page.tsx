@@ -218,6 +218,8 @@ export default function Home() {
   const [turns, setTurns] = useState<ResearchTurn[]>([]);
   const [researching, setResearching] = useState(false);
   const [researchMode, setResearchMode] = useState(false);
+  const [webSearchApiKey, setWebSearchApiKey] = useState("");
+  const [showWebSearchApiKey, setShowWebSearchApiKey] = useState(false);
   const [personaMode, setPersonaMode] = useState("teacher");
   const [chatModeMenuOpen, setChatModeMenuOpen] = useState(false);
   const [apiProvider, setApiProvider] = useState("openai");
@@ -276,6 +278,7 @@ export default function Home() {
     // Restore chats and migrate API credentials/chain from the older tab-only storage.
     try {
       setMemoryEnabled(window.localStorage.getItem("axes:memory-enabled") !== "false");
+      setWebSearchApiKey(window.localStorage.getItem("axes:web-search-api-key") || "");
       setResearchMode(window.localStorage.getItem("axes:research-mode") === "true");
       const savedPersona = window.localStorage.getItem("axes:persona");
       setPersonaMode(savedPersona && ["bro","professor","god","teacher","exam-coach","researcher","coding-mentor","socratic"].includes(savedPersona) ? savedPersona : "teacher");
@@ -363,6 +366,12 @@ export default function Home() {
     if (!projectsReady) return;
     window.localStorage.setItem("axes:research-mode", String(researchMode));
   }, [researchMode, projectsReady]);
+
+  useEffect(() => {
+    if (!projectsReady) return;
+    if (webSearchApiKey.trim()) window.localStorage.setItem("axes:web-search-api-key", webSearchApiKey.trim());
+    else window.localStorage.removeItem("axes:web-search-api-key");
+  }, [webSearchApiKey, projectsReady]);
 
   useEffect(() => {
     if (!projectsReady) return;
@@ -675,7 +684,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode: existingProject?.researchMode ?? researchMode, personaMode: existingProject?.personaMode || personaMode }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode: existingProject?.researchMode ?? researchMode, webSearchApiKey: webSearchApiKey.trim(), personaMode: existingProject?.personaMode || personaMode }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -773,6 +782,7 @@ export default function Home() {
               <a href="#settings-providers"><BrainCircuit size={15}/> AI connections</a>
               <a href="#settings-routing"><Orbit size={15}/> API chain</a>
               <a href="#settings-api-keys"><KeyRound size={15}/> API keys</a>
+              <a href="#settings-web-search"><Globe2 size={15}/> Web search</a>
               <a href="#settings-memory"><BrainCircuit size={15}/> Memory</a>
               <a href="#settings-personality"><Sparkles size={15}/> Personalization</a>
               <a href="#settings-safety"><ShieldCheck size={15}/> Safety</a>
@@ -804,6 +814,15 @@ export default function Home() {
               <div className="settings-security"><ShieldCheck size={15}/><span>Your key is stored in this browser on this device and used for model discovery and requests. Browser storage is not encrypted by AXES AI, so only save keys on a trusted device.</span></div>
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
               <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
+            </section>
+            <section className="settings-card universal-search-settings" id="settings-web-search">
+              <div className="settings-section-label"><span className="settings-kicker">03 · WEB RESEARCH</span><span>One search engine across every model</span></div>
+              <div className="settings-card-title"><span className="settings-card-icon"><Globe2 size={17}/></span><div><h2>Universal Web Search</h2><p>Connect Tavily once. AXES can then search the wider web before sending findings to any connected AI model.</p></div></div>
+              <label className="settings-label" htmlFor="axes-web-search-key">Tavily Search API key</label>
+              <div className="api-key-field"><input id="axes-web-search-key" type={showWebSearchApiKey ? "text" : "password"} value={webSearchApiKey} onChange={(event) => setWebSearchApiKey(event.target.value)} placeholder="Paste your Tavily API key" autoComplete="off"/><button type="button" aria-label={showWebSearchApiKey ? "Hide web search key" : "Show web search key"} onClick={() => setShowWebSearchApiKey((value) => !value)}>{showWebSearchApiKey ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
+              <div className="settings-security"><ShieldCheck size={15}/><span>Your search key is stored locally in this browser and sent only to the AXES AI server when Web Search is enabled. Browser storage is not encrypted by AXES AI; use a trusted device.</span></div>
+              <div className="universal-search-status"><span className={webSearchApiKey.trim() ? "universal-search-dot connected" : "universal-search-dot"}/><span>{webSearchApiKey.trim() ? "Universal search key saved in this browser" : "Add a search key to enable universal search across all supported models"}</span></div>
+              <p className="settings-note">Tavily retrieves relevant pages and page content; it does not search literally every page on the internet. Search availability, limits and any charges depend on your search-provider account. Gemini and Claude may still use their built-in search when no Tavily key is connected.</p>
             </section>
             <section className="settings-card memory-settings-card" id="settings-memory"><div className="settings-section-label"><span className="settings-kicker">04 · PERSONALIZATION</span><span>Context across conversations</span></div>
               <div className="settings-card-title"><span className="settings-card-icon"><BrainCircuit size={17}/></span><div><h2>Persistent AI memory</h2><p>Let AXES AI use relevant details from your earlier chats in this browser.</p></div></div>
@@ -859,7 +878,7 @@ export default function Home() {
               <div className="composer-top"><span className="composer-label"><Sparkles size={14}/> New chat</span><span className="private-label"><span/> Your workspace</span></div>
               <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => {if(e.key === "Enter" && !e.shiftKey){e.preventDefault();startResearch();}}} placeholder="Message AXES AI…" rows={3}/>
               <div className="composer-bottom">
-                <div className="composer-tools"><button title="Attach files"><Paperclip size={16}/></button><button title="Search the web"><Globe2 size={16}/><span>Web</span></button><button title="Research settings"><SlidersHorizontal size={15}/></button></div>
+                <div className="composer-tools"><button title="Attach files"><Paperclip size={16}/></button><button type="button" className={researchMode ? "composer-web-toggle active" : "composer-web-toggle"} title="Toggle universal web search" aria-pressed={researchMode} onClick={() => setResearchMode((value) => !value)}><Globe2 size={16}/><span>{researchMode ? "Web on" : "Web"}</span></button><button title="Research settings"><SlidersHorizontal size={15}/></button></div>
                 <div className="composer-controls">
                   <button className={researchMode ? "mode-select research-mode-active" : "mode-select"} type="button" aria-pressed={researchMode} onClick={() => setResearchMode((value) => !value)} title="Toggle structured deep analysis mode"><Microscope size={14}/>{researchMode ? "Research mode" : "Chat mode"}</button>
                   <div className="model-wrap"><button className="model-select" onClick={() => setModelOpen(!modelOpen)}><span className={"model-mark "+selectedModel.tone}>{selectedModel.mark}</span><span>{selectedModel.model}</span><ChevronDown size={13}/></button>
@@ -868,7 +887,7 @@ export default function Home() {
                   <button className="send-button" disabled={!prompt.trim()} aria-label="Send message" onClick={() => startResearch()}><ArrowUp size={17}/></button>
                 </div>
               </div>
-              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. {activeResearchMode ? "Live web search and linked sources work with compatible Gemini and Claude models. Provider search charges may apply." : ""} Chats and API keys are saved in this browser on this device.</div>
+              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. {researchMode ? (webSearchApiKey.trim() ? "Universal web search is enabled across your connected models." : "Connect a Tavily key in Settings for universal search; Gemini and Claude can use their built-in search.") : ""} Chats and API keys are saved in this browser on this device.</div>
             </div>
             <div className="workspace-footer"><span><span className="footer-dot"/> Ready to explore</span><span>AI, on your terms <b>·</b> AXES AI</span></div>
           </> : <div className="research-session">
