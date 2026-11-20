@@ -755,9 +755,9 @@ export default function Home() {
                   {id:"researcher",name:"Researcher Mode",tag:"Evidence first",desc:"Structured analysis, careful uncertainty and source-aware research.",icon:<Microscope size={19}/>},
                   {id:"coding-mentor",name:"Coding Mentor",tag:"Build & understand",desc:"Explain code, debug thoughtfully and teach good engineering habits.",icon:<Code2 size={19}/>},
                   {id:"socratic",name:"Socratic Tutor",tag:"Learn by thinking",desc:"Guiding questions and hints before revealing a full solution.",icon:<BrainCircuit size={19}/>}
-                ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>setPersonaMode(mode.id)}><span className="persona-mode-top"><span className="persona-mode-icon" aria-hidden="true">{mode.icon}</span><b>{mode.name}</b>{personaMode===mode.id&&<Check className="persona-mode-check" size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
+                ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>{window.localStorage.setItem("axes:persona",mode.id);setPersonaMode(mode.id);}}><span className="persona-mode-top"><span className="persona-mode-icon" aria-hidden="true">{mode.icon}</span><b>{mode.name}</b>{personaMode===mode.id&&<Check className="persona-mode-check" size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
               </div>
-              <div className="persona-current-note">Active mode: <b>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · Applies to new answers and is saved on this device.</div>
+              <div className="persona-current-note">Active mode: <b>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · This mode is sent with every new chat message. Switch it here and the chat updates immediately.</div>
             </section>
             <section className="settings-card education-policy-card" id="settings-safety">
               <div className="settings-section-label"><span className="settings-kicker">06 · TRUST & SAFETY</span><span>Education-first by design</span></div>
@@ -805,6 +805,7 @@ export default function Home() {
               <div className="chat-model-wrap">
                 <span className="chat-brand-mark"><Atom size={16}/></span>
                 <span className="chat-product-name">AXES AI</span>
+                <span className="chat-mode-indicator" title="Personality mode currently used for new chat answers"><Sparkles size={13}/><span>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</span></span>
                 <span className="chat-toolbar-divider">/</span>
                 <button className="chat-model-button" type="button" onClick={() => setModelOpen(!modelOpen)}>
                   {selectedModel.model}<ChevronDown size={13}/>
