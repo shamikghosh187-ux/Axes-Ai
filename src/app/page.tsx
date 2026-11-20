@@ -5,7 +5,7 @@ import {
   Atom, ArrowUp, ChevronDown, Plus, Search, FileText,
   Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
   PanelLeftClose, Command, Orbit, Library, SlidersHorizontal,
-  MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin
+  MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download
 } from "lucide-react";
 
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
@@ -237,6 +237,7 @@ export default function Home() {
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [chatSearch, setChatSearch] = useState("");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [memoryNotes, setMemoryNotes] = useState("");
   const chatThreadRef = useRef<HTMLDivElement>(null);
@@ -373,6 +374,26 @@ export default function Home() {
   useEffect(() => {
     if (apiChainReady) window.localStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
   }, [apiChain, apiChainReady]);
+
+  function exportCurrentChat(format: "md" | "txt") {
+    const project = projects.find((item) => item.id === currentProjectId);
+    const title = (project?.title || "AXES AI conversation").replace(/[\\/:*?"<>|]+/g, "-").trim() || "AXES AI conversation";
+    const conversationTurns = turns.length ? turns : (project ? getProjectTurns(project) : []);
+    if (!conversationTurns.length) return;
+    const content = format === "md"
+      ? `# ${title}\n\n${conversationTurns.map((turn) => `## You\n\n${turn.question}\n\n## AXES AI${turn.model ? ` · ${turn.model}` : ""}\n\n${turn.answer || turn.error || "No response recorded."}`).join("\n\n---\n\n")}\n`
+      : `${title}\n${"=".repeat(title.length)}\n\n${conversationTurns.map((turn) => `YOU\n${turn.question}\n\nAXES AI${turn.model ? ` (${turn.model})` : ""}\n${turn.answer || turn.error || "No response recorded."}`).join("\n\n----------------------------------------\n\n")}\n`;
+    const blob = new Blob([content], { type: format === "md" ? "text/markdown;charset=utf-8" : "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${title}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setExportMenuOpen(false);
+  }
 
   function saveProjectTitle(projectId: string) {
     const title = renameDraft.replace(/\s+/g, " ").trim();
@@ -715,7 +736,18 @@ export default function Home() {
                 </button>
                 {modelOpen && <div className="chat-model-menu">{models.map((m) => <button key={m.providerId + ":" + (m.keyId || "none") + ":" + m.model} onClick={() => {setSelectedModel(m);setModelOpen(false);}}><span className={"model-mark " + m.tone}>{m.mark}</span><span><b>{m.model}</b><small>{m.provider}</small></span>{selectedModel.providerId === m.providerId && selectedModel.keyId === m.keyId && selectedModel.model === m.model && <Check size={14}/>}</button>)}</div>}
               </div>
-              <span className="chat-status-label"><span className="status-dot"/> {researching ? "Thinking" : "Ready"}</span>
+              <div className="chat-toolbar-actions">
+                <div className="chat-export-wrap">
+                  <button type="button" className="chat-export-button" onClick={() => setExportMenuOpen((open) => !open)} aria-expanded={exportMenuOpen} title="Export conversation" disabled={!turns.length}>
+                    <Download size={14}/> <span>Export</span>
+                  </button>
+                  {exportMenuOpen && <div className="chat-export-menu">
+                    <button type="button" onClick={() => exportCurrentChat("md")}>Markdown (.md)</button>
+                    <button type="button" onClick={() => exportCurrentChat("txt")}>Plain text (.txt)</button>
+                  </div>}
+                </div>
+                <span className="chat-status-label"><span className="status-dot"/> {researching ? "Thinking" : "Ready"}</span>
+              </div>
             </div>
             <div className="chat-thread" ref={chatThreadRef}>
               {turns.map((turn, index) => <div className="chat-turn" key={turn.id} ref={index === turns.length - 1 ? latestTurnRef : undefined}>
