@@ -466,3 +466,27 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
     gap: 20px;
   }
 }
+
+
+/* Conversation sidebar: compact, quiet, ChatGPT-style history list */
+.axes-sidebar{background:#0d0f0f;border-right:1px solid #202323;padding:18px 10px 12px}
+.recent-label{margin:22px 8px 8px;color:#858d8d;font-size:10px;letter-spacing:.08em}
+.recent-label button{display:grid;place-items:center;width:23px;height:23px;border:0;border-radius:6px;background:transparent;color:#8c9494}
+.recent-label button:hover{background:#202323;color:#f1f3f2}
+.recent-list{display:flex;flex-direction:column;gap:2px;min-height:0;overflow-y:auto;overflow-x:hidden}
+.recent-chat-row{position:relative;display:flex;align-items:center;min-width:0;height:38px;border-radius:8px;background:transparent;transition:background .14s}
+.recent-chat-row:hover{background:#1b1d1d}
+.recent-chat-row.selected{background:#242626}
+.recent-chat-open{display:block;flex:1;min-width:0;height:100%;padding:0 10px;border:0;border-radius:8px;background:transparent;color:#c6cccc;text-align:left;font-size:12px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.recent-chat-row:hover .recent-chat-open,.recent-chat-row.selected .recent-chat-open{color:#f2f4f3}
+.recent-chat-actions{display:flex;align-items:center;gap:1px;padding:0 4px 0 0;opacity:0;transition:opacity .12s}
+.recent-chat-row:hover .recent-chat-actions,.recent-chat-row.selected .recent-chat-actions{opacity:1}
+.recent-chat-actions button{display:grid;place-items:center;width:25px;height:27px;border:0;border-radius:6px;background:transparent;color:#aeb5b5}
+.recent-chat-actions button:hover{background:#333737;color:#fff}
+.pin-symbol{font-size:16px;line-height:1;transform:rotate(35deg)}
+.recent-chat-menu{position:absolute;z-index:40;right:5px;top:34px;width:142px;padding:5px;border:1px solid #343939;border-radius:9px;background:#202323;box-shadow:0 12px 32px #0009}
+.recent-chat-menu button{display:block;width:100%;padding:8px 9px;border:0;border-radius:6px;background:transparent;color:#e4e8e7;text-align:left;font-size:11px}
+.recent-chat-menu button:hover{background:#303535}
+.recent-chat-menu button.danger{color:#f19a8d}
+.recent-chat-row .recent-chat-open:focus-visible,.recent-chat-actions button:focus-visible{outline:2px solid #fb923c;outline-offset:-2px}
+@media(max-width:760px){.recent-chat-actions{opacity:1}}
