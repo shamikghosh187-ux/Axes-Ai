@@ -216,6 +216,8 @@ export default function Home() {
   const [projects, setProjects] = useState<ResearchProject[]>([]);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [projectsReady, setProjectsReady] = useState(false);
+  const [pinnedProjectIds, setPinnedProjectIds] = useState<string[]>([]);
+  const [projectMenuId, setProjectMenuId] = useState<string | null>(null);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [memoryNotes, setMemoryNotes] = useState("");
   const chatThreadRef = useRef<HTMLDivElement>(null);
@@ -229,6 +231,14 @@ export default function Home() {
     const targetTop = latestTurn.offsetTop - thread.offsetTop + thread.scrollTop;
     thread.scrollTo({ top: Math.max(0, targetTop - 12), behavior: "smooth" });
   }, [turns.length, turns[turns.length - 1]?.id]);
+
+  useEffect(() => {
+    try { const savedPins = window.localStorage.getItem("axes:pinned-projects"); if (savedPins) setPinnedProjectIds(JSON.parse(savedPins)); } catch { setPinnedProjectIds([]); }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("axes:pinned-projects", JSON.stringify(pinnedProjectIds));
+  }, [pinnedProjectIds]);
 
   useEffect(() => {
     // Restore chats and migrate API credentials/chain from the older tab-only storage.
@@ -531,7 +541,7 @@ export default function Home() {
         <button className="icon-button sidebar-collapse" aria-label="Collapse sidebar" onClick={() => setSidebarOpen(false)}><PanelLeftClose size={17}/></button>
       </div>
       <button className="new-research" onClick={() => { setActiveNav("New chat"); setMessages([]); setTurns([]); setResearchAnswer(""); setResearchError(""); setCurrentProjectId(null); }}><Plus size={16}/> <span>New chat</span><span className="shortcut">⌘ K</span></button>
-      {projects.length > 0 && <><div className="sidebar-section-label">RECENT PROJECTS</div><nav className="sidebar-nav">{projects.slice(0, 8).map((project) => <button key={project.id} className={currentProjectId === project.id ? "nav-item active" : "nav-item"} onClick={() => { setCurrentProjectId(project.id); setMessages(project.questions); setTurns(getProjectTurns(project)); setResearchAnswer(project.answer); setResearchError(""); setActiveNav("Research project"); }}><FileText size={15}/><span>{project.title}</span></button>)}</nav></>}
+      {projects.length > 0 && <><div className="sidebar-section-label recent-label"><span>YOUR CHATS</span><button type="button" aria-label="New chat" onClick={() => { setActiveNav("New chat"); setMessages([]); setTurns([]); setResearchAnswer(""); setResearchError(""); setCurrentProjectId(null); }}><Plus size={14}/></button></div><nav className="recent-list">{[...projects].sort((a, b) => Number(pinnedProjectIds.includes(b.id)) - Number(pinnedProjectIds.includes(a.id)) || b.updatedAt - a.updatedAt).slice(0, 30).map((project) => <div key={project.id} className={"recent-chat-row" + (currentProjectId === project.id ? " selected" : "")}><button type="button" className="recent-chat-open" title={project.title} onClick={() => { setCurrentProjectId(project.id); setMessages(project.questions); setTurns(getProjectTurns(project)); setResearchAnswer(project.answer); setResearchError(""); setActiveNav("Research project"); setProjectMenuId(null); }}><span>{project.title}</span></button><div className="recent-chat-actions"><button type="button" aria-label={pinnedProjectIds.includes(project.id) ? "Unpin chat" : "Pin chat"} title={pinnedProjectIds.includes(project.id) ? "Unpin" : "Pin"} onClick={() => setPinnedProjectIds((old) => old.includes(project.id) ? old.filter((id) => id !== project.id) : [...old, project.id])}><span className="pin-symbol">⌖</span></button><button type="button" aria-label="Chat options" title="Chat options" onClick={() => setProjectMenuId((old) => old === project.id ? null : project.id)}><MoreHorizontal size={16}/></button></div>{projectMenuId === project.id && <div className="recent-chat-menu"><button type="button" onClick={() => { setPinnedProjectIds((old) => old.includes(project.id) ? old.filter((id) => id !== project.id) : [...old, project.id]); setProjectMenuId(null); }}>{pinnedProjectIds.includes(project.id) ? "Unpin chat" : "Pin chat"}</button><button type="button" className="danger" onClick={() => { setProjects((old) => old.filter((item) => item.id !== project.id)); if (currentProjectId === project.id) { setCurrentProjectId(null); setMessages([]); setTurns([]); setResearchAnswer(""); } setProjectMenuId(null); }}>Delete chat</button></div>}</div>)}</nav></>}
       <div className="sidebar-section-label">WORKSPACE</div>
       <nav className="sidebar-nav">
         {navItems.map(({label,icon:Icon}) => <button key={label} className={activeNav === label ? "nav-item active" : "nav-item"} onClick={() => setActiveNav(label)}><Icon size={16}/><span>{label}</span></button>)}
