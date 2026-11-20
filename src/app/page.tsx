@@ -5,7 +5,7 @@ import {
   Atom, ArrowUp, ChevronDown, Plus, Search, FileText,
   Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
   PanelLeftClose, Command, Orbit, Library, SlidersHorizontal,
-  MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download
+  MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download, RefreshCw, Microscope
 } from "lucide-react";
 
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
@@ -217,6 +217,7 @@ export default function Home() {
   const [messages, setMessages] = useState<string[]>([]);
   const [turns, setTurns] = useState<ResearchTurn[]>([]);
   const [researching, setResearching] = useState(false);
+  const [researchMode, setResearchMode] = useState(false);
   const [apiProvider, setApiProvider] = useState("openai");
   const [apiKey, setApiKey] = useState("");
   const [apiKeys, setApiKeys] = useState<ProviderKey[]>([]);
@@ -267,6 +268,7 @@ export default function Home() {
     // Restore chats and migrate API credentials/chain from the older tab-only storage.
     try {
       setMemoryEnabled(window.localStorage.getItem("axes:memory-enabled") !== "false");
+      setResearchMode(window.localStorage.getItem("axes:research-mode") === "true");
       const savedMemoryNotes = window.localStorage.getItem("axes:memory-notes");
       setMemoryNotes(savedMemoryNotes === null ? DEFAULT_USER_MEMORY : savedMemoryNotes);
       const savedProjects = window.localStorage.getItem("axes:research-projects");
@@ -346,6 +348,11 @@ export default function Home() {
     void upgradeSavedTitles();
     return () => { cancelled = true; };
   }, [projectsReady, models, projects]);
+
+  useEffect(() => {
+    if (!projectsReady) return;
+    window.localStorage.setItem("axes:research-mode", String(researchMode));
+  }, [researchMode, projectsReady]);
 
   useEffect(() => {
     if (!projectsReady) return;
@@ -587,7 +594,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "" }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -721,7 +728,7 @@ export default function Home() {
               <div className="composer-bottom">
                 <div className="composer-tools"><button title="Attach files"><Paperclip size={16}/></button><button title="Search the web"><Globe2 size={16}/><span>Web</span></button><button title="Research settings"><SlidersHorizontal size={15}/></button></div>
                 <div className="composer-controls">
-                  <button className="mode-select" type="button"><Orbit size={14}/>Chat mode</button>
+                  <button className={researchMode ? "mode-select research-mode-active" : "mode-select"} type="button" aria-pressed={researchMode} onClick={() => setResearchMode((value) => !value)} title="Toggle structured deep analysis mode"><Microscope size={14}/>{researchMode ? "Research mode" : "Chat mode"}</button>
                   <div className="model-wrap"><button className="model-select" onClick={() => setModelOpen(!modelOpen)}><span className={"model-mark "+selectedModel.tone}>{selectedModel.mark}</span><span>{selectedModel.model}</span><ChevronDown size={13}/></button>
                     {modelOpen && <div className="model-menu">{models.map((m) => <button key={m.providerId + ":" + (m.keyId || "none") + ":" + m.model} onClick={() => {setSelectedModel(m);setModelOpen(false);}}><span className={"model-mark "+m.tone}>{m.mark}</span><span><b>{m.model}</b><small>{m.provider}</small></span>{selectedModel.providerId === m.providerId && selectedModel.keyId === m.keyId && selectedModel.model === m.model && <Check size={14}/>}</button>)}</div>}
                   </div>
@@ -773,7 +780,7 @@ export default function Home() {
                     {researching && !turn.answer && !turn.error && turn.id === turns[turns.length - 1]?.id
                       ? <div className="thinking-indicator"><i/><i/><i/> <span>Thinking…</span></div>
                       : turn.answer ? <div className="assistant-answer-text">{renderAnswerMarkdown(turn.answer)}</div>
-                      : turn.error ? <p className="research-error">{turn.error}</p>
+                      : turn.error ? <div className="turn-error-block"><p className="research-error">{turn.error}</p><button type="button" className="retry-answer-button" disabled={researching} onClick={() => startResearch(turn.question, { replaceFromTurnId: turn.id })}><RefreshCw size={13}/> Retry response</button></div>
                       : <p className="assistant-waiting-copy">Waiting for response…</p>}
                     {turn.answer && <div className="answer-actions"><button type="button" title="Copy response" onClick={() => navigator.clipboard?.writeText(turn.answer)}><FileText size={14}/> Copy</button><span>{turn.provider ? `Generated by ${turn.provider}` : "Saved response"}</span></div>}
                   </div>
