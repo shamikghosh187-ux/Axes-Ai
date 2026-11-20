@@ -128,6 +128,19 @@ function getProjectTurns(project: ResearchProject): ResearchTurn[] {
   }));
 }
 type ProviderKey = { id: string; value: string };
+
+const DEFAULT_USER_MEMORY = [
+  "USER PROFILE — AXES AI",
+  "Name: Vincent.",
+  "Current life: Class 11 student at DAV School; CTO of Tech Symphony.",
+  "Skills: HTML5 and CSS3 (advanced); JavaScript (mid-to-advanced); Python (intermediate); Discord community management.",
+  "Projects: QuantumByte (future-tech ecosystem); EonOS (AI-powered OS concept); Nova (AI chat layer); Roster-AI (reliability and task-management framework); AXES AI (AI research workspace).",
+  "Aspirations: Build QuantumByte into a successful technology company; freelance front-end work for cash flow; scale AI and software products globally.",
+  "Interests: AI, system design, open-source, Discord growth, martial arts inspired by Bruce Lee, grip and forearm training, and cars (Grand Vitara Delta CNG).",
+  "People and roles: Brother Shubham (development and marketing); friend Anant (future CMO vision); friend Shiven (collaborator and Tech Symphony CEO).",
+  "Communication preferences: Casual, direct, friendly tone; modern branding; prefers Google sign-in or email plus OTP; likes ambitious, non-generic startup ideas.",
+  "Guidance for AXES: Treat these as user-provided background, not immutable facts. Use relevant details naturally when helping with school, coding, product design, startup planning, and research. Do not force irrelevant personal details into answers. If Vincent corrects or updates something, prefer the latest information."
+].join("\n");
 type ModelOption = { provider: string; providerId: string; model: string; mark: string; tone: string; keyId?: string };
 
 function readProviderKeys(providerId: string): ProviderKey[] {
@@ -221,7 +234,8 @@ export default function Home() {
     // Restore chats and migrate API credentials/chain from the older tab-only storage.
     try {
       setMemoryEnabled(window.localStorage.getItem("axes:memory-enabled") !== "false");
-      setMemoryNotes(window.localStorage.getItem("axes:memory-notes") || "");
+      const savedMemoryNotes = window.localStorage.getItem("axes:memory-notes");
+      setMemoryNotes(savedMemoryNotes === null ? DEFAULT_USER_MEMORY : savedMemoryNotes);
       const savedProjects = window.localStorage.getItem("axes:research-projects");
       const restoredProjects = savedProjects ? JSON.parse(savedProjects) as ResearchProject[] : [];
       setProjects(restoredProjects);
