@@ -238,6 +238,7 @@ export default function Home() {
   const [memoryNotes, setMemoryNotes] = useState("");
   const chatThreadRef = useRef<HTMLDivElement>(null);
   const latestTurnRef = useRef<HTMLDivElement>(null);
+  const titleMigrationRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!turns.length) return;
@@ -308,6 +309,37 @@ export default function Home() {
   useEffect(() => {
     if (projectsReady) window.localStorage.setItem("axes:research-projects", JSON.stringify(projects));
   }, [projects, projectsReady]);
+
+  useEffect(() => {
+    if (!projectsReady || !models.length || !projects.length) return;
+    let cancelled = false;
+    async function upgradeSavedTitles() {
+      for (const project of projects) {
+        if (titleMigrationRef.current.has(project.id)) continue;
+        const firstMessage = getProjectTurns(project)[0]?.question?.trim() || "";
+        const currentTitle = (project.title || "").trim();
+        if (!firstMessage || (currentTitle.toLowerCase() !== firstMessage.toLowerCase() && currentTitle !== makeConversationTitle(firstMessage))) continue;
+        titleMigrationRef.current.add(project.id);
+        const candidate = models.find((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
+        const key = candidate && readProviderKeys(candidate.providerId).find((item) => item.id === candidate.keyId)?.value;
+        if (!candidate || !key) continue;
+        try {
+          const response = await fetch("/api/research/title", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, message: firstMessage }),
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!cancelled && response.ok && typeof data.title === "string" && data.title.trim()) {
+            const title = data.title.trim();
+            setProjects((old) => old.map((item) => item.id === project.id ? { ...item, title } : item));
+          }
+        } catch { /* A saved chat remains usable if title migration fails. */ }
+      }
+    }
+    void upgradeSavedTitles();
+    return () => { cancelled = true; };
+  }, [projectsReady, models, projects]);
 
   useEffect(() => {
     if (!projectsReady) return;
