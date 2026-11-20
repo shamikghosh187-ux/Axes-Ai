@@ -62,27 +62,29 @@ function renderAnswerMarkdown(source: string): ReactNode {
     }
     if (/^(---+|\*\*\*|___)$/.test(line)) { blocks.push(<hr key={"hr-" + i++}/>); continue; }
     if (line.startsWith("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
-      const parseCells = (row: string) => row.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map(cell => cell.trim());
+      const parseCells = (row: string) => {
+        const trimmed = row.trim();
+        const normalized = trimmed.startsWith("|") ? trimmed.replace(/^\|/, "").replace(/\|$/, "") : trimmed;
+        return normalized.split("|").map(cell => cell.trim());
+      };
       const headers = parseCells(line);
       i += 2;
       const rows: string[][] = [];
       while (i < lines.length) {
+        // AI providers often insert blank lines between otherwise valid table rows.
+        // Skip those blanks, but stop before the next real paragraph or list.
+        while (i < lines.length && !lines[i].trim()) i++;
+        if (i >= lines.length) break;
         const candidate = lines[i].trim();
-        if (!candidate) break;
-        if (candidate.startsWith("|")) {
-          rows.push(parseCells(candidate));
+        if (candidate.startsWith("|") || candidate.includes("|")) {
+          const cells = parseCells(candidate);
+          if (cells.length >= headers.length) {
+            rows.push(cells.slice(0, headers.length));
+          } else if (cells.length > 1) {
+            rows.push([...cells, ...Array(headers.length - cells.length).fill("")]);
+          }
           i++;
           continue;
-        }
-        // Some providers flatten a whole Markdown table into one paragraph:
-        // "criterion | points | explanation | criterion | points | explanation".
-        // Recover the original rows when the cells fit the table's column count.
-        if (candidate.includes("|")) {
-          const flattened = candidate.split("|").map(cell => cell.trim()).filter(Boolean);
-          if (flattened.length >= headers.length && flattened.length % headers.length === 0) {
-            for (let cell = 0; cell < flattened.length; cell += headers.length) rows.push(flattened.slice(cell, cell + headers.length));
-            }
-          i++;
         }
         break;
       }
