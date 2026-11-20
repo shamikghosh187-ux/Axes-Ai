@@ -574,6 +574,18 @@ export default function Home() {
       return;
     }
 
+    // Honour the model selected in the chat toolbar when it belongs to the active
+    // API chain. Keep the remaining chain order intact for automatic failover.
+    const preferredIndex = candidates.findIndex((item) =>
+      item.providerId === selectedModel.providerId &&
+      item.keyId === selectedModel.keyId &&
+      item.model === selectedModel.model
+    );
+    if (preferredIndex > 0) {
+      const [preferred] = candidates.splice(preferredIndex, 1);
+      candidates.unshift(preferred);
+    }
+
     const first = candidates[0];
     const projectId = currentProjectId ?? crypto.randomUUID();
     const existingProject = projects.find((item) => item.id === projectId);
