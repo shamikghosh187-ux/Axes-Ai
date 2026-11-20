@@ -742,7 +742,7 @@ export default function Home() {
                   {id:"socratic",name:"Socratic Tutor",tag:"Learn by thinking",desc:"Guiding questions and hints before revealing a full solution."}
                 ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>setPersonaMode(mode.id)}><span className="persona-mode-top"><b>{mode.name}</b>{personaMode===mode.id&&<Check size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
               </div>
-              <div className="persona-current-note">Active mode: <b>{personaMode}</b> · Applies to new answers and is saved on this device.</div>
+              <div className="persona-current-note">Active mode: <b>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · Applies to new answers and is saved on this device.</div>
             </section>
             <section className="settings-card education-policy-card">
               <div className="settings-section-label"><span className="settings-kicker">06 · TRUST & SAFETY</span><span>Education-first by design</span></div>
