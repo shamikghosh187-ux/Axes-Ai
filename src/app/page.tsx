@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
-type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[] };
+type ResearchProject = { id: string; title: string; questions: string[]; answer: string; model: string; updatedAt: number; turns?: ResearchTurn[]; personaMode?: string };
 
 function makeConversationTitle(message: string): string {
   const clean = message.replace(/\s+/g, " ").trim();
@@ -249,6 +249,9 @@ export default function Home() {
   const latestTurnRef = useRef<HTMLDivElement>(null);
   const titleMigrationRef = useRef<Set<string>>(new Set());
 
+  const activeProject = projects.find((project) => project.id === currentProjectId);
+  const activePersonaMode = activeProject?.personaMode || personaMode;
+
   const latestTurnId = turns.length ? turns[turns.length - 1].id : undefined;
 
   useEffect(() => {
@@ -394,6 +397,16 @@ export default function Home() {
   useEffect(() => {
     if (apiChainReady) window.localStorage.setItem("axes:api-chain", JSON.stringify(apiChain.slice(0, 6)));
   }, [apiChain, apiChainReady]);
+
+  function selectChatPersonaMode(mode: string) {
+    if (currentProjectId) {
+      setProjects((old) => old.map((project) => project.id === currentProjectId ? { ...project, personaMode: mode, updatedAt: Date.now() } : project));
+    } else {
+      setPersonaMode(mode);
+      window.localStorage.setItem("axes:persona", mode);
+    }
+    setChatModeMenuOpen(false);
+  }
 
   function exportCurrentChat(format: "md" | "txt") {
     const project = projects.find((item) => item.id === currentProjectId);
@@ -561,6 +574,7 @@ export default function Home() {
       answer: "",
       model: first.model,
       turns: [],
+      personaMode: existingProject?.personaMode || personaMode,
       updatedAt: now,
     };
     setSelectedModel(first);
@@ -605,7 +619,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode, personaMode }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode, personaMode: existingProject?.personaMode || personaMode }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -758,7 +772,7 @@ export default function Home() {
                   {id:"socratic",name:"Socratic Tutor",tag:"Learn by thinking",desc:"Guiding questions and hints before revealing a full solution.",icon:<BrainCircuit size={19}/>}
                 ].map((mode) => <button type="button" key={mode.id} className={personaMode===mode.id?"persona-mode-card selected":"persona-mode-card"} aria-pressed={personaMode===mode.id} onClick={()=>{window.localStorage.setItem("axes:persona",mode.id);setPersonaMode(mode.id);}}><span className="persona-mode-top"><span className="persona-mode-icon" aria-hidden="true">{mode.icon}</span><b>{mode.name}</b>{personaMode===mode.id&&<Check className="persona-mode-check" size={15}/>}</span><small>{mode.tag}</small><span>{mode.desc}</span></button>)}
               </div>
-              <div className="persona-current-note">Active mode: <b>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · This mode is sent with every new chat message. Switch it here and the chat updates immediately.</div>
+              <div className="persona-current-note">Active mode: <b>{activePersonaMode === "bro" ? "Bro Mode" : activePersonaMode === "professor" ? "Professor Mode" : activePersonaMode === "god" ? "God Mode" : activePersonaMode === "teacher" ? "Teacher Mode" : activePersonaMode === "exam-coach" ? "Exam Coach" : activePersonaMode === "researcher" ? "Researcher Mode" : activePersonaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · This mode is sent with every new chat message. Switch it here and the chat updates immediately.</div>
             </section>
             <section className="settings-card education-policy-card" id="settings-safety">
               <div className="settings-section-label"><span className="settings-kicker">06 · TRUST & SAFETY</span><span>Education-first by design</span></div>
@@ -806,7 +820,7 @@ export default function Home() {
               <div className="chat-model-wrap">
                 <span className="chat-brand-mark"><Atom size={16}/></span>
                 <span className="chat-product-name">AXES AI</span>
-                <div className="chat-mode-picker"><button type="button" className="chat-mode-indicator" title="Change the personality mode used for new answers" aria-haspopup="menu" aria-expanded={chatModeMenuOpen} onClick={() => setChatModeMenuOpen((open) => !open)}><Sparkles size={13}/><span>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</span><ChevronDown size={11}/></button>{chatModeMenuOpen && <div className="chat-mode-menu" role="menu" aria-label="Choose personality mode">{[{id:"bro",name:"Bro Mode",desc:"Casual and relatable"},{id:"professor",name:"Professor Mode",desc:"Academic and rigorous"},{id:"god",name:"God Mode",desc:"Deepest useful analysis"},{id:"teacher",name:"Teacher Mode",desc:"Patient step-by-step teaching"},{id:"exam-coach",name:"Exam Coach",desc:"Marks and exam preparation"},{id:"researcher",name:"Researcher Mode",desc:"Evidence-first investigation"},{id:"coding-mentor",name:"Coding Mentor",desc:"Build and debug with guidance"},{id:"socratic",name:"Socratic Tutor",desc:"Learn through guided questions"}].map((mode) => <button type="button" role="menuitemradio" aria-checked={personaMode===mode.id} key={mode.id} onClick={() => {window.localStorage.setItem("axes:persona",mode.id);setPersonaMode(mode.id);setChatModeMenuOpen(false);}}><span><b>{mode.name}</b><small>{mode.desc}</small></span>{personaMode===mode.id && <Check size={14}/>}</button>)}</div>}</div>
+                <div className="chat-mode-picker"><button type="button" className="chat-mode-indicator" title="Change the personality mode used for new answers" aria-haspopup="menu" aria-expanded={chatModeMenuOpen} onClick={() => setChatModeMenuOpen((open) => !open)}><Sparkles size={13}/><span>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</span><ChevronDown size={11}/></button>{chatModeMenuOpen && <div className="chat-mode-menu" role="menu" aria-label="Choose personality mode">{[{id:"bro",name:"Bro Mode",desc:"Casual and relatable"},{id:"professor",name:"Professor Mode",desc:"Academic and rigorous"},{id:"god",name:"God Mode",desc:"Deepest useful analysis"},{id:"teacher",name:"Teacher Mode",desc:"Patient step-by-step teaching"},{id:"exam-coach",name:"Exam Coach",desc:"Marks and exam preparation"},{id:"researcher",name:"Researcher Mode",desc:"Evidence-first investigation"},{id:"coding-mentor",name:"Coding Mentor",desc:"Build and debug with guidance"},{id:"socratic",name:"Socratic Tutor",desc:"Learn through guided questions"}].map((mode) => <button type="button" role="menuitemradio" aria-checked={activePersonaMode===mode.id} key={mode.id} onClick={() => selectChatPersonaMode(mode.id)}><span><b>{mode.name}</b><small>{mode.desc}</small></span>{activePersonaMode===mode.id && <Check size={14}/>}</button>)}</div>}</div>
                 <span className="chat-toolbar-divider">/</span>
                 <button className="chat-model-button" type="button" onClick={() => setModelOpen(!modelOpen)}>
                   {selectedModel.model}<ChevronDown size={13}/>
