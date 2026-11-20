@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Atom, ArrowUp, ChevronDown, Plus, Search, FileText,
   Settings2, Sparkles, Globe2, Paperclip, BrainCircuit,
-  PanelLeftClose, Command, Orbit, Library, SlidersHorizontal,
-  MoreHorizontal, Check, Menu, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download, RefreshCw, Microscope
+  PanelLeftClose, Orbit, Library, SlidersHorizontal,
+  MoreHorizontal, Check, Eye, EyeOff, KeyRound, ShieldCheck, Trash2, Pin, Download, RefreshCw, Microscope, X
 } from "lucide-react";
 
 type ResearchTurn = { id: string; question: string; answer: string; model: string; provider: string; error?: string };
@@ -248,6 +248,8 @@ export default function Home() {
   const latestTurnRef = useRef<HTMLDivElement>(null);
   const titleMigrationRef = useRef<Set<string>>(new Set());
 
+  const latestTurnId = turns.length ? turns[turns.length - 1].id : undefined;
+
   useEffect(() => {
     if (!turns.length) return;
     const thread = chatThreadRef.current;
@@ -255,7 +257,7 @@ export default function Home() {
     if (!thread || !latestTurn) return;
     const targetTop = latestTurn.offsetTop - thread.offsetTop + thread.scrollTop;
     thread.scrollTo({ top: Math.max(0, targetTop - 12), behavior: "smooth" });
-  }, [turns.length, turns[turns.length - 1]?.id]);
+  }, [turns.length, latestTurnId]);
 
   useEffect(() => {
     try { const savedPins = window.localStorage.getItem("axes:pinned-projects"); if (savedPins) setPinnedProjectIds(JSON.parse(savedPins)); } catch { setPinnedProjectIds([]); }
