@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       ? "\n\nRESEARCH MODE: Produce a careful, substantial research brief. Start with a concise executive summary, then organize the response into clear sections. Explain key reasoning, distinguish established facts from assumptions or estimates, compare meaningful alternatives, identify limitations and unresolved questions, and finish with practical conclusions or next steps. Avoid padding. " + (useUniversalSearch ? "AXES has supplied live web search results and extracted page content below. Ground current and externally verifiable claims in those results, cite the supplied source URLs, and clearly flag gaps or uncertainty." : supportsLiveSearch ? "Use the enabled native live web-search tool when the question needs current or externally verifiable information. Base factual claims on retrieved sources and cite them; do not cite sources you did not retrieve." : "Universal live web search is not connected. Do not claim to browse or provide fabricated citations; tell the user to connect a search key in Settings when current facts need external verification.")
       : "";
 
-    let universalSources: { title: string; url: string }[] = [];
+    const universalSources: { title: string; url: string }[] = [];
     let universalSearchContext = "";
     if (researchMode && !webSearchApiKey && !supportsLiveSearch) {
       return NextResponse.json({ error: "Connect a Tavily Search API key in Settings to use live web search with this model." }, { status: 400 });
