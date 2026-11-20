@@ -505,3 +505,15 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
 .chat-export-menu button{display:block;width:100%;padding:9px 10px;border:0;border-radius:6px;background:transparent;color:var(--text-primary,#eee);text-align:left;font:inherit;font-size:12px;cursor:pointer}
 .chat-export-menu button:hover{background:rgba(239,137,73,.12);color:#f0a06b}
 
+/* Edit an earlier user message and regenerate from that point */
+.user-message-bubble{position:relative}
+.message-edit-trigger{display:inline-flex;align-items:center;gap:5px;margin:8px 0 0 10px;padding:4px 7px;border:1px solid transparent;border-radius:6px;background:transparent;color:var(--text-secondary,#a0a0a0);font:inherit;font-size:11px;opacity:.72;cursor:pointer;vertical-align:middle}
+.message-edit-trigger:hover{border-color:rgba(239,137,73,.35);background:rgba(239,137,73,.08);color:var(--text-primary,#eee);opacity:1}
+.message-edit-box{min-width:min(420px,70vw);display:flex;flex-direction:column;gap:9px}
+.message-edit-box textarea{width:100%;min-height:64px;resize:vertical;padding:10px 11px;border:1px solid var(--border-color,rgba(255,255,255,.16));border-radius:9px;outline:none;background:var(--panel-bg,#202020);color:var(--text-primary,#f2f2f2);font:inherit;font-size:13px;line-height:1.5}
+.message-edit-box textarea:focus{border-color:rgba(239,137,73,.7)}
+.message-edit-actions{display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.message-edit-actions button{padding:7px 10px;border:1px solid var(--border-color,rgba(255,255,255,.14));border-radius:7px;background:transparent;color:var(--text-secondary,#aaa);font:inherit;font-size:11px;cursor:pointer}
+.message-edit-actions .message-edit-save{border-color:transparent;background:#df8750;color:#17120e;font-weight:600}
+.message-edit-actions button:disabled{opacity:.45;cursor:not-allowed}
+
