@@ -29,13 +29,13 @@ function renderAnswerMarkdown(source: string): ReactNode {
   // Recover provider output that flattens a multi-row rubric into one line:
   // **1. Criterion** | marks | what earns marks | deductions | **2. Criterion** | ...
   const rubricRows: string[][] = [];
-  const rubricPattern = /\\*\\*\\d+\\.\\s*[^*]+\\*\\*/g;
+  const rubricPattern = /\*\*\d+\.\s*[^*]+\*\*/g;
   const rubricMatches = [...source.matchAll(rubricPattern)];
   if (rubricMatches.length >= 2) {
     for (let index = 0; index < rubricMatches.length; index++) {
       const start = rubricMatches[index].index ?? 0;
       const end = index + 1 < rubricMatches.length ? (rubricMatches[index + 1].index ?? source.length) : source.length;
-      const segment = source.slice(start, end).replace(/^\\s*\\|\\s*/, "").replace(/\\s*\\|\\s*$/, "").trim();
+      const segment = source.slice(start, end).replace(/^\s*\|\s*/, "").replace(/\s*\|\s*$/, "").trim();
       const cells = segment.split("|").map(cell => cell.trim());
       if (cells.length >= 3) rubricRows.push(cells.slice(0, 4));
     }
@@ -44,7 +44,7 @@ function renderAnswerMarkdown(source: string): ReactNode {
     return <div className="answer-markdown"><div className="answer-table-wrap"><table><thead><tr><th>Criterion</th><th>Points</th><th>What earns marks</th><th>Common deductions</th></tr></thead><tbody>{rubricRows.map((row, index) => <tr key={"rubric-" + index}><td>{renderInlineMarkdown(row[0], "rubric-title-" + index)}</td><td>{renderInlineMarkdown(row[1] || "", "rubric-points-" + index)}</td><td>{renderInlineMarkdown(row[2] || "", "rubric-evidence-" + index)}</td><td>{renderInlineMarkdown(row[3] || "", "rubric-deductions-" + index)}</td></tr>)}</tbody></table></div></div>;
   }
 
-  const normalizedSource = source.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n");
+  const normalizedSource = source.replace(/<br\s*\/?>/gi, "\n").replace(/\r\n?/g, "\n").replace(/\s*\|\|\s*/g, "\n\n").replace(/\s+\|\s+(?=\*\*[^*]+\*\*)/g, "\n\n").replace(/\s+\|\s+(?=(?:Snap|Blocking|Formation):)/g, "\n\n").replace(/\s*•\s*/g, "\n- ");
   const lines = normalizedSource.split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
@@ -107,7 +107,7 @@ function renderAnswerMarkdown(source: string): ReactNode {
     }
     const paragraph = [line];
     i++;
-    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\x60\x60\x60|---+|\*\*\*|___|\s*>|\s*[-*+]\s+|\s*\d+[.)]\s+)/.test(lines[i].trim()) && !(lines[i].trim().startsWith("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1]))) paragraph.push(lines[i++].trim());
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\x60\x60\x60|---+|\*\*\*|___|\s*>|\s*[-*+]\s+|\s*\d+[.)]\s+|\*\*[^*]+\*\*)/.test(lines[i].trim()) && !(lines[i].trim().startsWith("|") && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1]))) paragraph.push(lines[i++].trim());
     blocks.push(<p key={"p-" + i}>{renderInlineMarkdown(paragraph.join(" "), "p-" + i)}</p>);
   }
   return <div className="answer-markdown">{blocks}</div>;
