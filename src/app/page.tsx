@@ -849,7 +849,7 @@ export default function Home() {
                     <button type="button" onClick={() => exportCurrentChat("txt")}>Plain text (.txt)</button>
                   </div>}
                 </div>
-                <span className="chat-status-label"><span className="status-dot"/> {researching ? (researchMode ? "Researching" : "Thinking") : "Ready"}</span>
+                <span className="chat-status-label"><span className="status-dot"/> {researching ? (activeResearchMode ? "Researching" : "Thinking") : "Ready"}</span>
               </div>
             </div>
             <div className="chat-thread" ref={chatThreadRef}>
@@ -883,11 +883,11 @@ export default function Home() {
               <div className="chat-composer">
                 <textarea value={prompt} onChange={e=>setPrompt(e.target.value)} onKeyDown={e=>{if(e.key === "Enter" && !e.shiftKey){e.preventDefault();startResearch();}}} placeholder="Message AXES AI…" rows={2}/>
                 <div className="chat-composer-bottom">
-                  <div className="chat-composer-tools"><button type="button" title="Attach files"><Paperclip size={16}/></button><button type="button" title="Web search"><Globe2 size={16}/></button><button type="button" className={activeResearchMode ? "chat-research-toggle active" : "chat-research-toggle"} aria-pressed={activeResearchMode} onClick={toggleChatResearchMode} title="Toggle research mode"><Microscope size={14}/><span>{researchMode ? "Research on" : "Research"}</span></button><span>Shift + Enter for a new line</span></div>
+                  <div className="chat-composer-tools"><button type="button" title="Attach files"><Paperclip size={16}/></button><button type="button" title="Web search"><Globe2 size={16}/></button><button type="button" className={activeResearchMode ? "chat-research-toggle active" : "chat-research-toggle"} aria-pressed={activeResearchMode} onClick={toggleChatResearchMode} title="Toggle research mode"><Microscope size={14}/><span>{activeResearchMode ? "Research on" : "Research"}</span></button><span>Shift + Enter for a new line</span></div>
                   <button className="chat-send-button" disabled={!prompt.trim() || researching} onClick={()=>startResearch()} aria-label="Send message"><ArrowUp size={18}/></button>
                 </div>
               </div>
-              <p className="chat-disclaimer">AXES AI can make mistakes. Verify important information.{researchMode ? " Live web search and linked sources are supported with compatible Gemini and Claude models; other providers use deep analysis without live search. Provider search charges may apply." : ""}</p>
+              <p className="chat-disclaimer">AXES AI can make mistakes. Verify important information.{activeResearchMode ? " Live web search and linked sources are supported with compatible Gemini and Claude models; other providers use deep analysis without live search. Provider search charges may apply." : ""}</p>
             </div>
           </div>}
         </div>
