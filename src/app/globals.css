@@ -584,3 +584,45 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-vis
  .settings-main-content .settings-hero{padding:19px 16px}
  .settings-main-content .settings-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+
+/* Settings modal layout: fixed frame, two independent scroll regions */
+.axes-main:has(.settings-page){position:relative;height:100svh;min-height:0;overflow:hidden}
+.axes-main:has(.settings-page)::before{content:"";position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.66);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+.research-scroll:has(.settings-page){height:100%;min-height:0;overflow:hidden;padding:0;overscroll-behavior:none}
+.research-content:has(.settings-page){height:100%;min-height:0;overflow:hidden;display:block}
+.settings-page{position:fixed;z-index:81;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1360px,calc(100vw - 72px));height:min(850px,calc(100svh - 72px));min-height:0;max-height:calc(100svh - 72px);margin:0;padding:0;display:grid;grid-template-columns:270px minmax(0,1fr);gap:0;align-items:stretch;overflow:hidden;border:1px solid rgba(255,255,255,.11);border-radius:25px;background:#202020;box-shadow:0 28px 100px rgba(0,0,0,.55)}
+.settings-nav{position:relative;top:auto;display:flex;flex-direction:column;gap:4px;min-height:0;height:100%;max-height:none;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:20px 14px 22px;border:0;border-right:1px solid rgba(255,255,255,.13);border-radius:0;background:#242424;scrollbar-width:thin;scrollbar-color:#555 transparent}
+.settings-nav-heading{position:sticky;top:-20px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 4px 18px;margin:0 0 7px;background:#242424;border-bottom:1px solid rgba(255,255,255,.1)}
+.settings-nav-heading>b{font-size:18px;letter-spacing:-.02em;color:#f0f0f0}
+.settings-nav-heading .settings-kicker{display:none}
+.settings-close-button{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:#b9b9b9;cursor:pointer}
+.settings-close-button:hover{background:#3b3b3b;color:#fff}
+.settings-nav>a{min-height:40px;padding:0 11px;border-radius:8px;color:#c9c9c9;font-size:13px}
+.settings-nav>a:hover{background:#353535;color:#fff}
+.settings-nav>a:focus-visible{outline:2px solid #df9257;outline-offset:1px}
+.settings-main-content{display:flex;flex-direction:column;gap:20px;min-width:0;min-height:0;height:100%;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:38px clamp(28px,6vw,88px) 60px;scrollbar-width:thin;scrollbar-color:#555 transparent}
+.settings-main-content::-webkit-scrollbar,.settings-nav::-webkit-scrollbar{width:9px}
+.settings-main-content::-webkit-scrollbar-thumb,.settings-nav::-webkit-scrollbar-thumb{background:#555;border:2px solid transparent;background-clip:padding-box;border-radius:12px}
+.settings-main-content>.settings-hero{margin:0 0 5px;padding:0 0 20px;border:0;border-radius:0;background:transparent}
+.settings-main-content .settings-hero h1{font-size:32px;letter-spacing:-.04em}
+.settings-main-content .settings-hero>p{font-size:14px;color:#b5b5b5}
+.settings-main-content>.settings-section-intro{margin:8px 0 0}
+.settings-main-content>.provider-grid{margin-top:-8px}
+.settings-main-content>.settings-card,.settings-main-content>.api-chain-card{scroll-margin-top:18px}
+.settings-main-content [id]{scroll-margin-top:18px}
+.settings-main-content .settings-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.settings-main-content .settings-card,.settings-main-content .api-chain-card{border-radius:13px}
+@media(max-width:760px){
+ .settings-page{width:calc(100vw - 24px);height:calc(100svh - 24px);max-height:calc(100svh - 24px);grid-template-columns:190px minmax(0,1fr);border-radius:17px}
+ .settings-nav{padding:15px 9px}
+ .settings-main-content{padding:26px 20px 42px}
+}
+@media(max-width:560px){
+ .settings-page{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr);}
+ .settings-nav{height:auto;max-height:148px;overflow-x:auto;overflow-y:auto;border-right:0;border-bottom:1px solid rgba(255,255,255,.13);padding:9px 11px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-content:start;gap:4px}
+ .settings-nav-heading{grid-column:1/-1;position:sticky;top:-9px;padding:0 2px 7px;margin-bottom:2px}
+ .settings-nav>a{min-height:34px;font-size:11px;padding:0 7px}
+ .settings-main-content{padding:20px 14px 34px}
+ .settings-main-content .settings-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
