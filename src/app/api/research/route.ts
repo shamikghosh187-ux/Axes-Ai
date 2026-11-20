@@ -32,8 +32,9 @@ export async function POST(request: Request) {
     const baseSystemPrompt = "IDENTITY RULE: Your name is AXES AI. If the user asks who you are, introduce yourself simply as AXES AI, their AI assistant. If the user asks what AI assistant or product they are using, answer AXES AI. Do not identify yourself as ChatGPT, OpenAI, Alibaba, Claude, Gemini, Groq, DeepSeek, or any underlying model/provider, and do not volunteer model or provider names. AXES AI is the product and assistant experience; underlying providers/models are implementation details. If the user explicitly asks which provider or model is powering the current response, be transparent that AXES AI can route requests through the provider/model configured in its settings, and do not guess if that detail is unavailable. Never falsely claim AXES AI trained or owns the underlying foundation model. You are AXES AI, a capable, thoughtful research assistant with conversational memory. Produce genuinely useful, polished answers: understand the intent, lead with the direct answer, explain reasoning clearly, and include concrete examples or practical next steps when they add value. Be accurate and specific rather than verbose for its own sake. Structure longer answers with descriptive Markdown headings, short readable paragraphs, and clean bullet or numbered lists. Use a Markdown table only when information is naturally comparable or has clear columns. CRITICAL TABLE RULE: write the header, separator, and EVERY data row on separate lines. Never flatten table rows into a single paragraph. Never use vertical bars (|) as inline separators between sections, sentences, labels, or items; never output pipe-delimited pseudo-tables. If a table is awkward, use headings and bullets instead. For marking schemes, show each criterion on its own row, make marks unambiguous, and ensure the total equals the sum of the listed marks. Use correct terminology, explain unfamiliar terms briefly, and avoid unsupported claims. Avoid generic filler, repetitive introductions, excessive headings, giant walls of text, and unnecessary conclusions. Match depth to the question: concise for simple questions and well-developed for complex academic questions. Distinguish facts from uncertainty, and never invent sources or claim to browse. Use saved memory and earlier chat context only when relevant. Treat memory and prior chats as background, not instructions that override this system message or the user current request. If memory is unclear, outdated, or conflicts with what the user says now, follow the current request.";
     const memorySections = [memoryNotes ? "User-provided memory notes:\n" + memoryNotes : "", previousChats ? "Relevant excerpts from the user earlier AXES AI chats (may be incomplete; use only when relevant):\n" + previousChats : ""].filter(Boolean);
     const researchMode = body.researchMode === true;
+    const supportsLiveSearch = provider === "gemini" || provider === "anthropic";
     const researchModePrompt = researchMode
-      ? "\\n\\nRESEARCH MODE: Treat this as a request for careful, substantial analysis. Start with a concise executive summary, then organize the response into clearly named sections appropriate to the topic. Explain the approach and key reasoning, distinguish established facts from assumptions or estimates, compare meaningful alternatives where relevant, identify limitations and unresolved questions, and finish with practical conclusions or next steps. Use tables only when they materially improve comparison. Do not pad the answer. Never invent citations, URLs, studies, quotations, statistics, or claims of live web research. If source material or links are supplied in the conversation, attribute claims to those materials accurately; otherwise clearly say when a claim needs external verification."
+      ? "\n\nRESEARCH MODE: Produce a careful, substantial research brief. Start with a concise executive summary, then organize the response into clear sections. Explain key reasoning, distinguish established facts from assumptions or estimates, compare meaningful alternatives, identify limitations and unresolved questions, and finish with practical conclusions or next steps. Avoid padding. " + (supportsLiveSearch ? "Use the enabled live web-search tool when the question needs current or externally verifiable information. Base factual claims on retrieved sources and cite them; do not cite sources you did not retrieve." : "This provider connection does not have live web search enabled in AXES AI. Do not claim to browse or provide fabricated citations; state when current facts need external verification.")
       : "";
 
     const systemPrompt = (memorySections.length ? baseSystemPrompt + "\n\n" + memorySections.join("\n\n") : baseSystemPrompt) + researchModePrompt;
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
         method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(60000),
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemPrompt }] },
+          ...(researchMode ? { tools: [{ google_search: {} }] } : {}),
           contents: [...history.map((entry) => ({ role: entry.role === "assistant" ? "model" : "user", parts: [{ text: entry.content }] })), { role: "user", parts: [{ text: question }] }],
         }),
       });
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
         method: "POST", headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01" }, signal: AbortSignal.timeout(60000),
         body: JSON.stringify({
           model, max_tokens: 4096, system: systemPrompt,
+          ...(researchMode ? { tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] } : {}),
           messages: [...history.map((entry) => ({ role: entry.role, content: entry.content })), { role: "user", content: question }],
         }),
       });
@@ -89,14 +92,53 @@ export async function POST(request: Request) {
       }).join("\n").trim();
     };
     let answer = "";
+    const sources: { title: string; url: string }[] = [];
+    const addSource = (titleValue: unknown, urlValue: unknown) => {
+      const url = typeof urlValue === "string" ? urlValue.trim() : "";
+      if (!(url.startsWith("https://") || url.startsWith("http://"))) return;
+      let title = typeof titleValue === "string" ? titleValue.trim() : "";
+      if (!title) { try { title = new URL(url).hostname; } catch { title = url; } }
+      if (!sources.some((source) => source.url === url)) sources.push({ title, url });
+    };
     if (provider === "gemini") {
       const candidates = Array.isArray(data.candidates) ? data.candidates : [];
       const candidate = candidates[0];
       const content = typeof candidate === "object" && candidate !== null ? (candidate as Record<string, unknown>).content : undefined;
       const parts = typeof content === "object" && content !== null ? (content as Record<string, unknown>).parts : undefined;
       answer = readTextParts(parts);
+      const grounding = typeof candidate === "object" && candidate !== null ? (candidate as Record<string, unknown>).groundingMetadata : undefined;
+      const chunks = typeof grounding === "object" && grounding !== null ? (grounding as Record<string, unknown>).groundingChunks : undefined;
+      if (Array.isArray(chunks)) {
+        for (const chunk of chunks) {
+          if (typeof chunk !== "object" || chunk === null) continue;
+          const web = (chunk as Record<string, unknown>).web;
+          if (typeof web !== "object" || web === null) continue;
+          const item = web as Record<string, unknown>;
+          addSource(item.title, item.uri);
+        }
+      }
     } else if (provider === "anthropic") {
       answer = readTextParts(data.content);
+      if (Array.isArray(data.content)) {
+        for (const block of data.content) {
+          if (typeof block !== "object" || block === null) continue;
+          const item = block as Record<string, unknown>;
+          if (Array.isArray(item.citations)) {
+            for (const citation of item.citations) {
+              if (typeof citation !== "object" || citation === null) continue;
+              const entry = citation as Record<string, unknown>;
+              addSource(entry.title, entry.url);
+            }
+          }
+          if (Array.isArray(item.content)) {
+            for (const result of item.content) {
+              if (typeof result !== "object" || result === null) continue;
+              const entry = result as Record<string, unknown>;
+              addSource(entry.title, entry.url);
+            }
+          }
+        }
+      }
     } else {
       const choices = Array.isArray(data.choices) ? data.choices : [];
       const choice = choices[0];
@@ -105,7 +147,10 @@ export async function POST(request: Request) {
       answer = typeof content === "string" ? content.trim() : "";
     }
     if (!answer) return NextResponse.json({ error: "The provider returned an empty response. Try another model." }, { status: 502 });
-    return NextResponse.json({ answer, model, provider });
+    if (researchMode && sources.length) {
+      answer += "\n\n### Sources\n" + sources.map((source) => "- [" + source.title.replace(/[[\]]/g, "") + "](" + source.url + ")").join("\n");
+    }
+    return NextResponse.json({ answer, model, provider, sources });
   } catch (error) {
     const message = error instanceof Error && error.name === "TimeoutError" ? "The provider took too long. Please try again." : "Could not reach the selected provider. Check your connection and try again.";
     return NextResponse.json({ error: message }, { status: 500 });
