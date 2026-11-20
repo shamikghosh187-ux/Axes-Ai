@@ -693,14 +693,26 @@ export default function Home() {
       <div className="research-scroll">
         <div className="research-content">
           {activeNav === "Settings" ? <div className="settings-page">
-            <div className="settings-heading settings-hero"><span className="settings-kicker">AXES CONTROL CENTER</span><h1>Settings</h1><p>Manage AI providers, routing, memory and local workspace preferences.</p><div className="settings-overview-grid"><div className="settings-overview-card"><span>Connected providers</span><b>{connectedProviders.length}</b><small>Providers with saved keys</small></div><div className="settings-overview-card"><span>Saved API keys</span><b>{providers.reduce((total, provider) => total + readProviderKeys(provider.id).length, 0)}</b><small>Stored in this browser</small></div><div className="settings-overview-card"><span>Active chain</span><b>{apiChain.length}<i>/6</i></b><small>Ordered fallback keys</small></div><div className="settings-overview-card"><span>AI memory</span><b className="settings-memory-status">{memoryEnabled ? "On" : "Off"}</b><small>Cross-chat context</small></div></div></div>
-            <div className="settings-section-intro"><div><span className="settings-kicker">01 · PROVIDERS</span><h2>AI connections</h2><p>Choose a provider to add, validate or manage its API keys.</p></div><span className="settings-section-count">{providers.length} providers supported</span></div>
+            <nav className="settings-nav" aria-label="Settings navigation">
+              <div className="settings-nav-heading"><span className="settings-kicker">PREFERENCES</span><b>Settings</b></div>
+              <a href="#settings-overview"><SlidersHorizontal size={15}/> Overview</a>
+              <a href="#settings-providers"><BrainCircuit size={15}/> AI connections</a>
+              <a href="#settings-routing"><Orbit size={15}/> API chain</a>
+              <a href="#settings-api-keys"><KeyRound size={15}/> API keys</a>
+              <a href="#settings-memory"><BrainCircuit size={15}/> Memory</a>
+              <a href="#settings-personality"><Sparkles size={15}/> Personalization</a>
+              <a href="#settings-safety"><ShieldCheck size={15}/> Safety</a>
+              <a href="#settings-terms"><FileText size={15}/> Terms & privacy</a>
+            </nav>
+            <div className="settings-main-content">
+            <div className="settings-heading settings-hero" id="settings-overview"><span className="settings-kicker">AXES CONTROL CENTER</span><h1>Settings</h1><p>Manage AI providers, routing, memory and local workspace preferences.</p><div className="settings-overview-grid"><div className="settings-overview-card"><span>Connected providers</span><b>{connectedProviders.length}</b><small>Providers with saved keys</small></div><div className="settings-overview-card"><span>Saved API keys</span><b>{providers.reduce((total, provider) => total + readProviderKeys(provider.id).length, 0)}</b><small>Stored in this browser</small></div><div className="settings-overview-card"><span>Active chain</span><b>{apiChain.length}<i>/6</i></b><small>Ordered fallback keys</small></div><div className="settings-overview-card"><span>AI memory</span><b className="settings-memory-status">{memoryEnabled ? "On" : "Off"}</b><small>Cross-chat context</small></div></div></div>
+            <div className="settings-section-intro" id="settings-providers"><div><span className="settings-kicker">01 · PROVIDERS</span><h2>AI connections</h2><p>Choose a provider to add, validate or manage its API keys.</p></div><span className="settings-section-count">{providers.length} providers supported</span></div>
             <div className="provider-grid">
               {providers.map((provider) => <button type="button" key={provider.id} className={apiProvider === provider.id ? "provider-card selected" : "provider-card"} onClick={() => { setApiProvider(provider.id); setApiKey(""); setApiKeys(readProviderKeys(provider.id)); setApiKeySaved(readProviderKeys(provider.id).length > 0); setModelsError(""); }}>
                 <span className={"provider-mark " + provider.tone}>{provider.mark}</span><span className="provider-card-copy"><b>{provider.name}</b><small>{connectedProviders.includes(provider.id) ? "API key connected · models ready" : "Select to add or manage a key"}</small></span><span className="provider-card-action">{connectedProviders.includes(provider.id) ? "Manage key" : "Add API key"} <Plus size={13}/></span>
               </button>)}
             </div>
-            <section className="api-chain-card" id="api-chain"><div className="settings-section-label"><span className="settings-kicker">02 · ROUTING</span><span>Automatic provider failover</span></div>
+            <section className="api-chain-card" id="settings-routing"><div className="settings-section-label"><span className="settings-kicker">02 · ROUTING</span><span>Automatic provider failover</span></div>
               <div className="api-chain-heading"><div><span className="settings-kicker">AUTOMATIC FAILOVER</span><h2>API Chain <span>{apiChain.length}/6</span></h2><p>AXES tries each key in this exact order and stops at the first successful answer.</p></div><span className="chain-status">{apiChain.length === 6 ? "Chain full" : "Up to 6 keys"}</span></div>
               {apiChain.length ? <ol className="api-chain-list">{apiChain.map((item, index) => {
                 const providerMeta = providers.find((provider) => provider.id === item.providerId);
@@ -711,7 +723,7 @@ export default function Home() {
               })}</ol> : <p className="chain-empty">Your chain is empty. Add saved API keys below to enable automatic fallback.</p>}
               <div className="chain-add-area"><b>Add saved keys to chain</b><div className="chain-add-list">{providers.flatMap((provider) => readProviderKeys(provider.id).map((key, index) => ({ provider, key, index }))).filter(({ provider, key }) => !apiChain.some((item) => item.providerId === provider.id && item.keyId === key.id)).map(({ provider, key, index }) => <button type="button" key={provider.id + ":" + key.id} disabled={apiChain.length >= 6} onClick={() => addToChain(provider.id, key.id)}><Plus size={12}/>{provider.name} {index + 1}</button>)}</div>{apiChain.length >= 6 && <small className="chain-limit-note">Maximum chain length reached. Remove a key to add another.</small>}</div>
             </section>
-            <section className="settings-card">
+            <section className="settings-card" id="settings-api-keys">
               <div className="settings-card-title"><span className="settings-card-icon"><KeyRound size={17}/></span><div><h2>{providers.find((p) => p.id === apiProvider)?.name || "Provider"} API key</h2><p>Enter your key to load the available models for this provider.</p></div></div>
               <div className="saved-api-keys"><div className="settings-label">Saved keys ({apiKeys.length})</div>{apiKeys.map((savedKey, index) => <div className="saved-api-key-row" key={savedKey.id}><span><b>Key {index + 1}</b><small>••••••••{savedKey.value.slice(-4)}</small></span><button type="button" className="settings-remove" onClick={() => removeApiKey(savedKey.id)}><Trash2 size={13}/> Remove</button></div>)}</div>
               <label className="settings-label" htmlFor="provider-key">Add another API key</label><div className="api-key-field"><input id="provider-key" type={showApiKey ? "text" : "password"} value={apiKey} onChange={(e)=>{setApiKey(e.target.value);setApiKeySaved(false);}} placeholder={`Paste your ${providers.find((p)=>p.id===apiProvider)?.name || apiProvider} API key`} autoComplete="off"/><button type="button" aria-label={showApiKey ? "Hide API key" : "Show API key"} onClick={()=>setShowApiKey(!showApiKey)}>{showApiKey ? <EyeOff size={16}/> : <Eye size={16}/>}</button></div>
@@ -719,7 +731,7 @@ export default function Home() {
               {modelsLoading && <p>Loading available models…</p>}{modelsError && <p className="research-error">{modelsError}</p>}{apiKeySaved && !modelsLoading && !modelsError && <p>{models.length} models loaded for {providers.find((p)=>p.id===apiProvider)?.name}.</p>}
               <div className="settings-actions"><button className="settings-save" disabled={!apiKey.trim() || modelsLoading} onClick={saveApiKey}>{modelsLoading ? "Connecting…" : "Add API key"}</button></div>
             </section>
-            <section className="settings-card memory-settings-card" id="memory-settings"><div className="settings-section-label"><span className="settings-kicker">04 · PERSONALIZATION</span><span>Context across conversations</span></div>
+            <section className="settings-card memory-settings-card" id="settings-memory"><div className="settings-section-label"><span className="settings-kicker">04 · PERSONALIZATION</span><span>Context across conversations</span></div>
               <div className="settings-card-title"><span className="settings-card-icon"><BrainCircuit size={17}/></span><div><h2>Persistent AI memory</h2><p>Let AXES AI use relevant details from your earlier chats in this browser.</p></div></div>
               <div className="memory-toggle-row"><div><b>{memoryEnabled ? "Memory is on" : "Memory is off"}</b><small>{memoryEnabled ? "Previous chats and your notes can inform new conversations." : "New conversations will not use previous-chat context."}</small></div><button type="button" className={memoryEnabled ? "memory-toggle active" : "memory-toggle"} role="switch" aria-checked={memoryEnabled} onClick={() => setMemoryEnabled((value) => !value)}><span/></button></div>
               <label className="settings-label" htmlFor="axes-memory-notes">Things AXES AI should remember</label>
@@ -727,7 +739,7 @@ export default function Home() {
               <div className="memory-footnote">Memory is stored locally in this browser alongside your saved chats. It is not synced between devices. Do not store passwords or API keys here.</div>
             </section>
 
-            <section className="settings-card persona-settings-card">
+            <section className="settings-card persona-settings-card" id="settings-personality">
               <div className="settings-section-label"><span className="settings-kicker">05 · PERSONALITY</span><span>Choose how AXES AI teaches</span></div>
               <div className="settings-card-title"><span className="settings-card-icon"><Sparkles size={17}/></span><div><h2>Assistant modes</h2><p>Change the explanation style. Every mode follows the same education and safety rules.</p></div></div>
               <div className="persona-mode-grid">
@@ -744,7 +756,7 @@ export default function Home() {
               </div>
               <div className="persona-current-note">Active mode: <b>{personaMode === "bro" ? "Bro Mode" : personaMode === "professor" ? "Professor Mode" : personaMode === "god" ? "God Mode" : personaMode === "teacher" ? "Teacher Mode" : personaMode === "exam-coach" ? "Exam Coach" : personaMode === "researcher" ? "Researcher Mode" : personaMode === "coding-mentor" ? "Coding Mentor" : "Socratic Tutor"}</b> · Applies to new answers and is saved on this device.</div>
             </section>
-            <section className="settings-card education-policy-card">
+            <section className="settings-card education-policy-card" id="settings-safety">
               <div className="settings-section-label"><span className="settings-kicker">06 · TRUST & SAFETY</span><span>Education-first by design</span></div>
               <div className="settings-card-title"><span className="settings-card-icon"><ShieldCheck size={17}/></span><div><h2>Education & safety policy</h2><p>AXES AI is designed for learning, research, creativity and responsible building.</p></div></div>
               <div className="policy-rule-list">
@@ -756,7 +768,7 @@ export default function Home() {
               </div>
               <div className="policy-footnote">Safety rules apply to every personality mode, including God Mode. No mode can disable or override them.</div>
             </section>
-            <section className="settings-card terms-policy-card">
+            <section className="settings-card terms-policy-card" id="settings-terms">
               <div className="settings-section-label"><span className="settings-kicker">07 · TERMS & POLICIES</span><span>Plain-language product rules</span></div>
               <div className="policy-document"><h3>Terms of Use</h3><p>By using AXES AI, you agree to use it for lawful, educational and constructive purposes. You must not request, create, share or use the service for mature or explicit content, exploitation, harassment, violence, self-harm facilitation, dangerous wrongdoing or illegal activity. Do not attempt to bypass safety controls. You are responsible for reviewing AI-generated work, checking important facts and following your school, workplace and local rules.</p>
                 <h3>Privacy Notice</h3><p>In this version, saved chats, memory notes, selected modes and API keys are stored in your browser on this device. They are not synced to an AXES account by this app. When you send a prompt, the prompt and relevant chat context are sent to the AI provider you selected, together with its API key, to generate a response. Research mode may send queries to the connected provider search service. Provider privacy and retention practices are controlled by that provider; review its terms before connecting a key. Do not submit sensitive personal information.</p>
@@ -765,6 +777,7 @@ export default function Home() {
               </div>
             </section>
             <div className="settings-note"><span className="settings-kicker">LOCAL DATA & PRIVACY</span><br/>Supported providers: OpenAI, Google Gemini, Anthropic Claude, Groq, DeepSeek, OpenRouter and MeshAPI. API keys and chats are saved in this browser on this device. They are not synced to an AXES account or committed to GitHub. Prompts are sent to the selected AI provider when you use AXES AI. Clearing browser data or removing a key will erase that local copy.</div>
+            </div>
           </div> : messages.length === 0 ? <>
             <div className="welcome-eyebrow"><span className="status-dot"/> YOUR PERSONAL AI WORKSPACE</div>
             <div className="welcome-title"><h1>One space.<br/><em>Every model.</em></h1><p>Chat with different AI models, compare their answers, and find the right one for every task.</p></div>
