@@ -735,7 +735,7 @@ export default function Home() {
                   <button className="send-button" disabled={!prompt.trim()} aria-label="Send message" onClick={() => startResearch()}><ArrowUp size={17}/></button>
                 </div>
               </div>
-              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. {researchMode ? "Live web search and linked sources work with compatible Gemini and Claude models." : ""} Chats and API keys are saved in this browser on this device.</div>
+              <div className="composer-footnote">AI-generated responses may be inaccurate. Check important claims against primary sources. {researchMode ? "Live web search and linked sources work with compatible Gemini and Claude models. Provider search charges may apply." : ""} Chats and API keys are saved in this browser on this device.</div>
             </div>
             <div className="workspace-footer"><span><span className="footer-dot"/> Ready to explore</span><span>AI, on your terms <b>·</b> AXES AI</span></div>
           </> : <div className="research-session">
@@ -759,7 +759,7 @@ export default function Home() {
                     <button type="button" onClick={() => exportCurrentChat("txt")}>Plain text (.txt)</button>
                   </div>}
                 </div>
-                <span className="chat-status-label"><span className="status-dot"/> {researching ? "Thinking" : "Ready"}</span>
+                <span className="chat-status-label"><span className="status-dot"/> {researching ? (researchMode ? "Researching" : "Thinking") : "Ready"}</span>
               </div>
             </div>
             <div className="chat-thread" ref={chatThreadRef}>
@@ -778,7 +778,7 @@ export default function Home() {
                   <div className="assistant-message-content">
                     <div className="assistant-name">AXES AI <span>{turn.model || selectedModel.model}</span></div>
                     {researching && !turn.answer && !turn.error && turn.id === turns[turns.length - 1]?.id
-                      ? <div className="thinking-indicator"><i/><i/><i/> <span>Thinking…</span></div>
+                      ? <div className="thinking-indicator"><i/><i/><i/> <span>{researchMode ? "Building research brief…" : "Thinking…"}</span></div>
                       : turn.answer ? <div className="assistant-answer-text">{renderAnswerMarkdown(turn.answer)}</div>
                       : turn.error ? <div className="turn-error-block"><p className="research-error">{turn.error}</p><button type="button" className="retry-answer-button" disabled={researching} onClick={() => startResearch(turn.question, { replaceFromTurnId: turn.id })}><RefreshCw size={13}/> Retry response</button></div>
                       : <p className="assistant-waiting-copy">Waiting for response…</p>}
@@ -797,7 +797,7 @@ export default function Home() {
                   <button className="chat-send-button" disabled={!prompt.trim() || researching} onClick={()=>startResearch()} aria-label="Send message"><ArrowUp size={18}/></button>
                 </div>
               </div>
-              <p className="chat-disclaimer">AXES AI can make mistakes. Verify important information.{researchMode ? " Live web search and linked sources are supported with compatible Gemini and Claude models; other providers use deep analysis without live search." : ""}</p>
+              <p className="chat-disclaimer">AXES AI can make mistakes. Verify important information.{researchMode ? " Live web search and linked sources are supported with compatible Gemini and Claude models; other providers use deep analysis without live search. Provider search charges may apply." : ""}</p>
             </div>
           </div>}
         </div>
