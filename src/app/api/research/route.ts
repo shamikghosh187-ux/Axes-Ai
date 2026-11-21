@@ -36,7 +36,10 @@ export async function POST(request: Request) {
     const requestedPersona = typeof body.personaMode === "string" ? body.personaMode : "teacher";
     const personaMode = ["bro","professor","god","teacher","exam-coach","researcher","coding-mentor","socratic"].includes(requestedPersona) ? requestedPersona : "teacher";
     const blockedRequestPatterns = [
-      /\b(porn|pornography|erotic|explicit sexual content|sexual role.?play|adult video)\b/i,
+      // Block requests to discover or access adult-content apps/services before any web search runs.
+      /\b(?:adult|18\+|nsfw)\s+(?:apps?|websites?|sites?|platforms?|services?|content)\b/i,
+      /\b(?:apps?|websites?|sites?|platforms?)\s+(?:for|to find)\s+(?:adult|18\+|nsfw|sexting|hookups?)\b/i,
+      /\b(?:sexting|hookup|porn|pornography|erotic|explicit sexual content|sexual role.?play|adult video)\b/i,
       /\b(how to|steps to|instructions to|guide to)\s+(make|build|assemble)\s+(a\s+)?(bomb|explosive|weapon|firearm)\b/i,
       /\b(how to|ways to|instructions for)\s+(kill|poison|seriously hurt|attack)\s+(someone|a person|people)\b/i,
       /\b(suicide|self.?harm)\s+(method|methods|instructions|how to)\b/i,
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
       /\b(steal|phish|break into)\s+(someone'?s?\s+)?(password|account|device)\b/i
     ];
     if (blockedRequestPatterns.some((pattern) => pattern.test(question))) {
-      return NextResponse.json({ error: "AXES AI is an education-first space and cannot help with mature content or instructions that could harm people. I can help with a safe, age-appropriate explanation of the science, history, prevention or safety aspects instead." }, { status: 403 });
+      return NextResponse.json({ error: "AXES AI is an education-first space and cannot help find adult-content apps, websites or services, or provide instructions that could harm people. I can help with safe, age-appropriate information instead." }, { status: 403 });
     }
     const personaInstructions: Record<string, string> = {
       bro: "BRO MODE — Sound like a friendly, sharp study partner. Use natural everyday language, short punchy paragraphs, relatable analogies and occasional light clean humour. Explain jargon in plain words. Keep the energy relaxed, but never sacrifice accuracy. Avoid stiff academic phrasing unless the topic requires it.",
