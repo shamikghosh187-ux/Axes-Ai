@@ -595,6 +595,9 @@ export default function Home() {
   async function startResearch(value = prompt, options?: { replaceFromTurnId?: string }) {
     const question = value.trim();
     if (!question || researching) return;
+    // Natural-language web-search intent: users can type "websearch", "search the web",
+    // "browse the web", or similar without manually switching the toolbar toggle.
+    const asksForWebSearch = /\\b(web\\s*search|websearch|search\\s+(?:the\\s+)?(?:web|internet|online)|browse\\s+(?:the\\s+)?(?:web|internet)|look\\s+up\\s+(?:online|on\\s+the\\s+web)|find\\s+(?:this\\s+)?online)\\b/i.test(question);
     setShowApiFailureDialog(false);
     setApiFailureDetails([]);
     const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
@@ -630,6 +633,7 @@ export default function Home() {
     const first = candidates[0];
     const projectId = currentProjectId ?? crypto.randomUUID();
     const existingProject = projects.find((item) => item.id === projectId);
+    const shouldUseResearchMode = asksForWebSearch || (existingProject?.researchMode ?? researchMode);
     const now = Date.now();
     const newProject: ResearchProject = {
       id: projectId,
@@ -639,7 +643,7 @@ export default function Home() {
       model: first.model,
       turns: [],
       personaMode: existingProject?.personaMode || personaMode,
-      researchMode: existingProject?.researchMode ?? researchMode,
+      researchMode: shouldUseResearchMode,
       updatedAt: now,
     };
     setSelectedModel(first);
@@ -664,7 +668,7 @@ export default function Home() {
       .slice(0, 6000) : "";
     setTurns([...previousTurns, pendingTurn]);
     setProjects((old) => existingProject
-      ? old.map((item) => item.id === projectId ? { ...item, questions: [...previousTurns.map((turn) => turn.question), question], turns: [...previousTurns, pendingTurn], updatedAt: now } : item)
+      ? old.map((item) => item.id === projectId ? { ...item, questions: [...previousTurns.map((turn) => turn.question), question], turns: [...previousTurns, pendingTurn], researchMode: shouldUseResearchMode, updatedAt: now } : item)
       : [{ ...newProject, turns: [pendingTurn] }, ...old]);
     setEditingTurnId(null);
     setEditDraft("");
@@ -684,7 +688,7 @@ export default function Home() {
           const response = await fetch("/api/research", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode: existingProject?.researchMode ?? researchMode, webSearchApiKey: webSearchApiKey.trim(), personaMode: existingProject?.personaMode || personaMode }),
+            body: JSON.stringify({ provider: candidate.providerId, model: candidate.model, apiKey: key, question, history: currentChatHistory, previousChats: previousChatMemory, memoryNotes: memoryEnabled ? memoryNotes.slice(0, 3000) : "", researchMode: shouldUseResearchMode, webSearchApiKey: webSearchApiKey.trim(), personaMode: existingProject?.personaMode || personaMode }),
           });
           const data = await response.json().catch(() => ({}));
           if (!response.ok) throw new Error(data.error || `${candidate.provider} request failed.`);
@@ -950,7 +954,7 @@ export default function Home() {
                   <button className="chat-send-button" disabled={!prompt.trim() || researching} onClick={()=>startResearch()} aria-label="Send message"><ArrowUp size={18}/></button>
                 </div>
               </div>
-              <p className="chat-disclaimer">AXES AI can make mistakes. Verify important information.{activeResearchMode ? " Live web search and linked sources are supported with compatible Gemini and Claude models; other providers use deep analysis without live search. Provider search charges may apply." : ""}</p>
+              <p className="chat-disclaimer">AXES AI can make mistakes. Verify important information.{activeResearchMode ? " Live web search works across connected AI models when a Tavily key is saved. Search-provider limits or charges may apply." : ""}</p>
             </div>
           </div>}
         </div>
