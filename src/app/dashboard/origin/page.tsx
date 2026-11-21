@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, BookOpen, FileText, FlaskConical, Plus, Search, UploadCloud, Microscope, ExternalLink } from "lucide-react";
 type Project = { id:string; title:string; domain:string; research_question:string; scope:string; status:string; created_at:string };
-type Paper = { external_id:string; title:string; doi:string|null; publication_year:number|null; cited_by_count:number; landing_url:string; authors:string[] };
+type Paper = { id?:string; external_id:string; title:string; doi:string|null; publication_year:number|null; cited_by_count:number; landing_url:string; authors:string[] };
 type DocumentItem = { id:string; title:string; byte_size:number; parse_status:string; created_at:string };
 export default function OriginPage() {
  const [projects,setProjects]=useState<Project[]>([]),[active,setActive]=useState(""),[documents,setDocuments]=useState<DocumentItem[]>([]),[papers,setPapers]=useState<Paper[]>([]),[savedPapers,setSavedPapers]=useState<Paper[]>([]);
