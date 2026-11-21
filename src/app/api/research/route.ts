@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     const useUniversalSearch = researchMode && Boolean(webSearchApiKey);
     const useNativeProviderSearch = researchMode && !useUniversalSearch && supportsLiveSearch;
     const researchModePrompt = researchMode
-      ? "\n\nRESEARCH MODE: Produce a careful, substantial research brief. Start with a concise executive summary, then organize the response into clear sections. Explain key reasoning, distinguish established facts from assumptions or estimates, compare meaningful alternatives, identify limitations and unresolved questions, and finish with practical conclusions or next steps. Avoid padding. " + (useUniversalSearch ? "AXES has supplied live web search results and extracted page content below. Ground current and externally verifiable claims in those results, cite the supplied source URLs, and clearly flag gaps or uncertainty." : supportsLiveSearch ? "Use the enabled native live web-search tool when the question needs current or externally verifiable information. Base factual claims on retrieved sources and cite them; do not cite sources you did not retrieve." : "Universal live web search is not connected. Do not claim to browse or provide fabricated citations; tell the user to connect a search key in Settings when current facts need external verification.")
+      ? "\n\nRESEARCH MODE: Produce a careful, substantial research brief. Start with a concise executive summary, then organize the response into clear sections. Explain key reasoning, distinguish established facts from assumptions or estimates, compare meaningful alternatives, identify limitations and unresolved questions, and finish with practical conclusions or next steps. Avoid padding. " + (useUniversalSearch ? "AXES has supplied live web search results and extracted page content below. Treat those results as the ONLY evidence for current or externally verifiable claims. Do not use pretrained knowledge to fill gaps. Every factual claim about current events must be supported by the supplied results. If the results do not support a detail, explicitly say it could not be verified. Never invent headlines, publication dates, quotations, URLs, source titles, or facts. Do not create a Sources or References section; the server will append the verified search results separately." : supportsLiveSearch ? "Use the enabled native live web-search tool when the question needs current or externally verifiable information. Base factual claims on retrieved sources and cite them; do not cite sources you did not retrieve." : "Universal live web search is not connected. Do not claim to browse or provide fabricated citations; tell the user to connect a search key in Settings when current facts need external verification.")
       : "";
 
     const universalSources: { title: string; url: string }[] = [];
@@ -213,8 +213,17 @@ export async function POST(request: Request) {
       answer = typeof content === "string" ? content.trim() : "";
     }
     if (!answer) return NextResponse.json({ error: "The provider returned an empty response. Try another model." }, { status: 502 });
+    if (useUniversalSearch) {
+      // Remove model-written source lists and reject links that Tavily did not return.
+      answer = answer.replace(/\n#{1,3}\s*(?:sources|references)\b[\s\S]*$/i, "").trim();
+      const verifiedUrls = new Set(sources.map((source) => source.url));
+      answer = answer.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label: string, url: string) =>
+        verifiedUrls.has(url) ? match : label
+      );
+      answer = answer.replace(/https?:\/\/[^\s)]+/g, (url) => verifiedUrls.has(url.replace(/[.,;]+$/, "")) ? url : "");
+    }
     if (researchMode && sources.length) {
-      answer += "\n\n### Sources\n" + sources.map((source) => "- [" + source.title.replace(/[[\\]]/g, "") + "](" + source.url + ")").join("\n");
+      answer += "\n\n### Verified sources retrieved by " + (useUniversalSearch ? "Tavily" : "the connected search provider") + "\n" + sources.map((source) => "- [" + source.title.replace(/[[\\]]/g, "") + "](" + source.url + ")").join("\n");
     }
     return NextResponse.json({ answer, model, provider, sources, searchProvider: useUniversalSearch ? "Tavily" : (useNativeProviderSearch ? "Provider search" : null) });
   } catch (error) {
