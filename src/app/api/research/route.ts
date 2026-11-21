@@ -47,7 +47,16 @@ export async function POST(request: Request) {
       /\b(steal|phish|break into)\s+(someone'?s?\s+)?(password|account|device)\b/i
     ];
     if (blockedRequestPatterns.some((pattern) => pattern.test(question))) {
-      return NextResponse.json({ error: "AXES AI is an education-first space and cannot help find adult-content apps, websites or services, or provide instructions that could harm people. I can help with safe, age-appropriate information instead." }, { status: 403 });
+      // Return a normal assistant-style warning, not an HTTP/API error.
+      // This exits before provider calls or Tavily search, so no external links are attached.
+      return NextResponse.json({
+        answer: "⚠️ **Content warning**\n\nThis request involves adult or sexually explicit apps or content. AXES AI is an education-first assistant, so it can't recommend, find, or link to those services.\n\nI can still help with age-appropriate information about online safety, privacy, consent, and protecting yourself online.",
+        model,
+        provider,
+        sources: [],
+        searchProvider: null,
+        safetyBlocked: true
+      }, { status: 200 });
     }
     const personaInstructions: Record<string, string> = {
       bro: "BRO MODE — Sound like a friendly, sharp study partner. Use natural everyday language, short punchy paragraphs, relatable analogies and occasional light clean humour. Explain jargon in plain words. Keep the energy relaxed, but never sacrifice accuracy. Avoid stiff academic phrasing unless the topic requires it.",
