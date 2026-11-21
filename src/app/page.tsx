@@ -697,7 +697,10 @@ export default function Home() {
           // Reveal the completed response in short readable chunks instead of one visual wall.
           // The provider response is still received as a whole; this is a paced display effect.
           const answer = data.answer as string;
-          const chunkSize = 32;
+          // Smoothly reveal the finished answer without adding a long artificial wait.
+          // Larger chunks keep lengthy research answers responsive.
+          const chunkSize = answer.length > 7000 ? 180 : answer.length > 2500 ? 110 : 64;
+          const revealDelay = answer.length > 7000 ? 6 : 10;
           for (let end = chunkSize; end < answer.length + chunkSize; end += chunkSize) {
             const visibleAnswer = answer.slice(0, Math.min(end, answer.length));
             setResearchAnswer(visibleAnswer);
@@ -705,7 +708,7 @@ export default function Home() {
             setProjects((old) => old.map((item) => item.id === projectId
               ? { ...item, answer: visibleAnswer, model: candidate.model, turns: getProjectTurns(item).map((turn) => turn.id === pendingTurn.id ? { ...turn, answer: visibleAnswer, model: candidate.model, provider: candidate.provider, error: undefined } : turn), updatedAt: Date.now() }
               : item));
-            if (end < answer.length) await new Promise((resolve) => window.setTimeout(resolve, 18));
+            if (end < answer.length) await new Promise((resolve) => window.setTimeout(resolve, revealDelay));
           }
           // Generate a semantic title from the first message using the same provider/model.
           // Existing chats are only retitled when this is their first turn.
