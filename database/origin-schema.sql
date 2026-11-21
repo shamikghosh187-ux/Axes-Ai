@@ -197,3 +197,16 @@ drop policy if exists "origin_pdf_select_own_folder" on storage.objects;
 create policy "origin_pdf_select_own_folder" on storage.objects for select to authenticated using (bucket_id = 'origin-documents' and (storage.foldername(name))[1] = (select auth.uid())::text);
 drop policy if exists "origin_pdf_delete_own_folder" on storage.objects;
 create policy "origin_pdf_delete_own_folder" on storage.objects for delete to authenticated using (bucket_id = 'origin-documents' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- The authenticated application client uses these grants together with the owner-scoped RLS policies above.
+grant select, insert, update, delete on public.origin_projects to authenticated;
+grant select, insert, update, delete on public.origin_papers to authenticated;
+grant select, insert, update, delete on public.origin_documents to authenticated;
+grant select, insert, update, delete on public.origin_document_chunks to authenticated;
+grant select, insert, update, delete on public.origin_research_runs to authenticated;
+grant select, insert, update, delete on public.origin_run_events to authenticated;
+grant select, insert, update, delete on public.origin_claims to authenticated;
+grant select, insert, update, delete on public.origin_claim_evidence to authenticated;
+grant select, insert, update, delete on public.origin_hypotheses to authenticated;
+grant select, insert, update, delete on public.origin_hypothesis_reviews to authenticated;
+grant select, insert, update, delete on public.origin_reports to authenticated;
