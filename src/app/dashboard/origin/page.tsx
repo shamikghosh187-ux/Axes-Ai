@@ -8,10 +8,51 @@ type DocumentItem = { id:string; title:string; byte_size:number; parse_status:st
 export default function OriginPage() {
  const [projects,setProjects]=useState<Project[]>([]),[active,setActive]=useState(""),[documents,setDocuments]=useState<DocumentItem[]>([]),[papers,setPapers]=useState<Paper[]>([]),[savedPapers,setSavedPapers]=useState<Paper[]>([]);
  const [query,setQuery]=useState(""),[title,setTitle]=useState(""),[domain,setDomain]=useState("physics"),[question,setQuestion]=useState(""),[scope,setScope]=useState(""),[showCreate,setShowCreate]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
- const loadProjects=useCallback(async()=>{const r=await fetch("/api/origin/projects");const j=await r.json();if(!r.ok){setError(j.error||"Could not load projects.");return}const items=(j.projects||[]) as Project[];setProjects(items);setActive(c=>c&&items.some(x=>x.id===c)?c:items[0]?.id||"")},[]);
- const loadDocuments=useCallback(async(id:string)=>{if(!id){setDocuments([]);return}const r=await fetch("/api/origin/documents?projectId="+encodeURIComponent(id));const j=await r.json();if(r.ok)setDocuments(j.documents||[])},[]);
- const loadSavedPapers=useCallback(async(id:string)=>{if(!id){setSavedPapers([]);return}const r=await fetch("/api/origin/literature?saved=1&projectId="+encodeURIComponent(id));const j=await r.json();if(r.ok)setSavedPapers(j.papers||[])},[]);
- useEffect(()=>{void loadProjects()},[loadProjects]);useEffect(()=>{void loadDocuments(active);void loadSavedPapers(active);setPapers([])},[active,loadDocuments,loadSavedPapers]);
+ const loadProjects = useCallback(async () => {
+  const response = await fetch("/api/origin/projects");
+  const data = await response.json();
+  if (!response.ok) {
+   setError(data.error || "Could not load projects.");
+   return;
+  }
+  const items = (data.projects || []) as Project[];
+  setProjects(items);
+  setActive((currentId) =>
+   currentId && items.some((item) => item.id === currentId)
+    ? currentId
+    : items[0]?.id || ""
+  );
+ }, []);
+
+ const loadDocuments = useCallback(async (projectId: string) => {
+  if (!projectId) {
+   setDocuments([]);
+   return;
+  }
+  const response = await fetch("/api/origin/documents?projectId=" + encodeURIComponent(projectId));
+  const data = await response.json();
+  if (response.ok) setDocuments(data.documents || []);
+ }, []);
+
+ const loadSavedPapers = useCallback(async (projectId: string) => {
+  if (!projectId) {
+   setSavedPapers([]);
+   return;
+  }
+  const response = await fetch("/api/origin/literature?saved=1&projectId=" + encodeURIComponent(projectId));
+  const data = await response.json();
+  if (response.ok) setSavedPapers(data.papers || []);
+ }, []);
+
+ useEffect(() => {
+  void loadProjects();
+ }, [loadProjects]);
+
+ useEffect(() => {
+  void loadDocuments(active);
+  void loadSavedPapers(active);
+  setPapers([]);
+ }, [active, loadDocuments, loadSavedPapers]);
  const current=projects.find(p=>p.id===active);
  async function createProject(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError("");setNotice("");const r=await fetch("/api/origin/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,domain,research_question:question,scope})});const j=await r.json();if(!r.ok)setError(j.error||"Could not create project.");else{setTitle("");setQuestion("");setScope("");setShowCreate(false);setNotice("Research project created.");await loadProjects();setActive(j.project.id)}setBusy(false)}
  async function searchPapers(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(!active||!query.trim())return;setBusy(true);setError("");setPapers([]);const r=await fetch("/api/origin/literature?q="+encodeURIComponent(query)+"&projectId="+encodeURIComponent(active));const j=await r.json();if(!r.ok)setError(j.error||"Literature search failed.");else setPapers(j.papers||[]);setBusy(false)}
