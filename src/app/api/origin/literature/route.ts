@@ -7,10 +7,15 @@ export async function GET(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Sign in to search literature." }, { status: 401 });
   const url = new URL(request.url), query = (url.searchParams.get("q") ?? "").trim().slice(0, 300), projectId = url.searchParams.get("projectId") ?? "";
-  if (!query) return NextResponse.json({ papers: [] });
   if (!projectId) return NextResponse.json({ error: "Choose a research project first." }, { status: 400 });
   const { data: project } = await supabase.from("origin_projects").select("id").eq("id", projectId).eq("owner_id", user.id).maybeSingle();
   if (!project) return NextResponse.json({ error: "Research project not found." }, { status: 404 });
+  if (url.searchParams.get("saved") === "1") {
+    const { data, error } = await supabase.from("origin_papers").select("id,external_id,title,doi,publication_year,authors,landing_url,created_at").eq("project_id", projectId).eq("owner_id", user.id).order("created_at", { ascending: false });
+    if (error) return NextResponse.json({ error: "Could not load saved papers. Check the ORIGIN schema." }, { status: 503 });
+    return NextResponse.json({ papers: data ?? [] });
+  }
+  if (!query) return NextResponse.json({ papers: [] });
   const endpoint = new URL("https://api.openalex.org/works");
   endpoint.searchParams.set("search", query); endpoint.searchParams.set("per-page", "12"); endpoint.searchParams.set("select", "id,doi,title,publication_year,cited_by_count,primary_location,authorships");
   try {
