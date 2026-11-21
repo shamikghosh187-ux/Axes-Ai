@@ -597,7 +597,7 @@ export default function Home() {
     if (!question || researching) return;
     // Natural-language web-search intent: users can type "websearch", "search the web",
     // "browse the web", or similar without manually switching the toolbar toggle.
-    const asksForWebSearch = /\\b(web\\s*search|websearch|search\\s+(?:the\\s+)?(?:web|internet|online)|browse\\s+(?:the\\s+)?(?:web|internet)|look\\s+up\\s+(?:online|on\\s+the\\s+web)|find\\s+(?:this\\s+)?online)\\b/i.test(question);
+    const asksForWebSearch = /\b(web\s*search|websearch|search\s+(?:the\s+)?(?:web|internet|online)|browse\s+(?:the\s+)?(?:web|internet)|look\s+up\s+(?:online|on\s+the\s+web)|find\s+(?:this\s+)?online)\b/i.test(question);
     setShowApiFailureDialog(false);
     setApiFailureDetails([]);
     const connectedModels = models.filter((item) => readProviderKeys(item.providerId).some((key) => key.id === item.keyId));
