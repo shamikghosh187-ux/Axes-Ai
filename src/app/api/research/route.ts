@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       // Reject unrelated search hits instead of presenting arbitrary URLs as useful sources.
       const stopWords = new Set(["the","and","for","with","from","that","this","what","when","where","which","who","why","how","can","could","would","should","best","good","latest","recent","find","search","research","about","into","your","you","are","was","were","is","are","app","apps"]);
       const queryTerms = question.toLowerCase().match(/[a-z0-9]{3,}/g)?.filter((term: string) => !stopWords.has(term)) ?? [];
-      const uniqueQueryTerms = [...new Set(queryTerms)];
+      const uniqueQueryTerms: string[] = [...new Set<string>(queryTerms)];
       let rejectedIrrelevantResults = 0;
       for (const result of results) {
         if (typeof result !== "object" || result === null) continue;
