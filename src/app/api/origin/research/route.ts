@@ -85,7 +85,7 @@ SCOPE: ${project.scope}
 SOURCE PASSAGES:
 ${JSON.stringify(sourceContext)}`;
     const endpoint="https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key="+encodeURIComponent(apiKey);
-    const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},signal:AbortSignal.timeout(110000),body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:0.2,responseMimeType:"application/json",maxOutputTokens:8192}})});
+    const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},signal:AbortSignal.timeout(45000),body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:0.2,responseMimeType:"application/json",maxOutputTokens:8192}})});
     const payload:unknown=await response.json().catch(()=>null);
     if(!response.ok){const message=payload&&typeof payload==="object"&&"error" in payload&&(payload as {error?:{message?:string}}).error?.message;throw new Error(typeof message==="string"?message.slice(0,400):"Gemini research request failed.");}
     const raw=payload&&typeof payload==="object"&&"candidates" in payload?(payload as {candidates?:Array<{content?:{parts?:Array<{text?:string}>}}>} ).candidates?.[0]?.content?.parts?.map(p=>p.text||"").join("")||"":"";
