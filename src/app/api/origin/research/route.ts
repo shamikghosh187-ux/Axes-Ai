@@ -60,15 +60,16 @@ export async function POST(request: Request) {
         const relation=item.relation==="contradicts"||item.relation==="context"?item.relation:"supports";
         return [{chunk_id:source.id,relation,quote,quote_start:offset,quote_end:offset+quote.length,rationale:typeof item.rationale==="string"?item.rationale.slice(0,1000):""}];
       });
-      const epistemic=validEvidence.length?"sourced_fact":"insufficient_evidence";
+      const uniqueEvidence=[...new Map(validEvidence.map(item=>[item.chunk_id+":"+item.relation,item])).values()];
+      const epistemic=uniqueEvidence.length?"unverified":"insufficient_evidence";
       const {data:saved,error}=await supabase.from("origin_claims").insert({run_id:run.id,owner_id:user.id,text:claim.text.slice(0,4000),claim_kind:claim.claim_kind||"finding",epistemic_status:epistemic}).select("id").single();
       if(error||!saved) continue;
-      if(validEvidence.length){
-        const evidenceRows=validEvidence.map(item=>({claim_id:saved.id,chunk_id:item.chunk_id,owner_id:user.id,relation:item.relation,quote_start:item.quote_start,quote_end:item.quote_end,rationale:item.rationale}));
+      if(uniqueEvidence.length){
+        const evidenceRows=uniqueEvidence.map(item=>({claim_id:saved.id,chunk_id:item.chunk_id,owner_id:user.id,relation:item.relation,quote_start:item.quote_start,quote_end:item.quote_end,rationale:item.rationale}));
         const {error:evidenceError}=await supabase.from("origin_claim_evidence").insert(evidenceRows);
         if(evidenceError) throw new Error("Could not persist validated claim evidence.");
       }
-      savedClaims.push({id:saved.id,text:claim.text,status:epistemic,evidence:validEvidence.map(item=>({chunk_id:item.chunk_id,relation:item.relation,quote:item.quote,page:chunkMap.get(item.chunk_id)?.page_start??null}))});
+      savedClaims.push({id:saved.id,text:claim.text,status:epistemic,evidence:uniqueEvidence.map(item=>({chunk_id:item.chunk_id,relation:item.relation,quote:item.quote,page:chunkMap.get(item.chunk_id)?.page_start??null}))});
     }
 
     await addEvent(3,"hypothesis_review","running","Reviewing competing explanations, predictions, falsifiers and weaknesses.");
