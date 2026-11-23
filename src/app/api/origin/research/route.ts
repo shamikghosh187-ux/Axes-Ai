@@ -11,6 +11,27 @@ type ClaimDraft = { text:string; claim_kind?:string; evidence?:EvidenceDraft[] }
 type HypothesisDraft = { title:string; statement:string; mechanism?:string; assumptions?:string[]; predictions?:string[]; falsifiers?:string[]; uncertainties?:string[]; critique?:{weaknesses?:string[]; alternative_explanations?:string[]; discriminating_tests?:string[]} };
 type ResearchDraft = { executive_summary?:string; methodology?:string; findings?:string[]; research_gaps?:string[]; limitations?:string[]; next_steps?:string[]; claims?:ClaimDraft[]; hypotheses?:HypothesisDraft[] };
 
+export async function GET(request: Request) {
+  const supabase=await createClient();
+  const {data:{user}}=await supabase.auth.getUser();
+  if(!user) return NextResponse.json({error:"Sign in to view ORIGIN research history."},{status:401});
+  const projectId=new URL(request.url).searchParams.get("projectId")||"";
+  if(!projectId) return NextResponse.json({error:"Choose a research project."},{status:400});
+  const {data:project}=await supabase.from("origin_projects").select("id").eq("id",projectId).eq("owner_id",user.id).maybeSingle();
+  if(!project) return NextResponse.json({error:"Research project not found."},{status:404});
+  const {data:runs,error}=await supabase.from("origin_research_runs").select("id,question_snapshot,status,model_id,prompt_version,created_at,finished_at").eq("project_id",projectId).eq("owner_id",user.id).order("created_at",{ascending:false}).limit(12);
+  if(error) return NextResponse.json({error:"Could not load research history. Check the ORIGIN schema."},{status:503});
+  const history=[];
+  for(const run of runs||[]){
+    const [{data:reports},{data:events}]=await Promise.all([
+      supabase.from("origin_reports").select("id,version,content,created_at").eq("run_id",run.id).eq("owner_id",user.id).order("version",{ascending:false}).limit(1),
+      supabase.from("origin_run_events").select("sequence,stage,status,message,created_at").eq("run_id",run.id).eq("owner_id",user.id).order("sequence",{ascending:true})
+    ]);
+    history.push({...run,report:reports?.[0]||null,events:events||[]});
+  }
+  return NextResponse.json({history});
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
