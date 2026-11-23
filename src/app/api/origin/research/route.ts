@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   if(!project) return NextResponse.json({error:"Research project not found."},{status:404});
   const {data:runs,error}=await supabase.from("origin_research_runs").select("id,question_snapshot,status,model_id,prompt_version,created_at,finished_at").eq("project_id",projectId).eq("owner_id",user.id).order("created_at",{ascending:false}).limit(12);
   if(error) return NextResponse.json({error:"Could not load research history. Check the ORIGIN schema."},{status:503});
-  const history=[];
+  const history: Array<Record<string, unknown>>=[];
   for(const run of runs||[]){
     const [{data:reports},{data:events}]=await Promise.all([
       supabase.from("origin_reports").select("id,version,content,created_at").eq("run_id",run.id).eq("owner_id",user.id).order("version",{ascending:false}).limit(1),
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     if(!Array.isArray(draft.claims)||!Array.isArray(draft.hypotheses)) throw new Error("The research model returned an incomplete structured result.");
 
     await addEvent(2,"evidence_mapping","running","Validating model-suggested quotations against stored source passages.");
-    const chunkMap=new Map((chunks as Chunk[]).map(chunk=>[chunk.id,chunk]));
+    const chunkMap=new Map<string,Chunk>((chunks as Chunk[]).map(chunk=>[chunk.id,chunk] as const));
     const savedClaims:Array<{id:string;text:string;status:string;evidence:Array<{chunk_id:string;relation:string;quote:string;page:number|null}>}>=[];
     for(const claim of draft.claims.slice(0,8)){
       if(typeof claim.text!=="string"||!claim.text.trim()) continue;
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
         const relation=item.relation==="contradicts"||item.relation==="context"?item.relation:"supports";
         return [{chunk_id:source.id,relation,quote,quote_start:offset,quote_end:offset+quote.length,rationale:typeof item.rationale==="string"?item.rationale.slice(0,1000):""}];
       });
-      const uniqueEvidence=[...new Map(validEvidence.map(item=>[item.chunk_id+":"+item.relation,item])).values()];
+      const uniqueEvidence=Array.from(new Map<string,typeof validEvidence[number]>(validEvidence.map(item=>[item.chunk_id+":"+item.relation,item] as const)).values());
       const epistemic=uniqueEvidence.length?"unverified":"insufficient_evidence";
       const {data:saved,error}=await supabase.from("origin_claims").insert({run_id:run.id,owner_id:user.id,text:claim.text.slice(0,4000),claim_kind:claim.claim_kind||"finding",epistemic_status:epistemic}).select("id").single();
       if(error||!saved) continue;
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     }
 
     await addEvent(3,"hypothesis_review","running","Reviewing competing explanations, predictions, falsifiers and weaknesses.");
-    const savedHypotheses=[];
+    const savedHypotheses: Array<Record<string, unknown>>=[];
     for(const hypothesis of draft.hypotheses.slice(0,3)){
       if(typeof hypothesis.title!=="string"||typeof hypothesis.statement!=="string") continue;
       const {data:saved,error}=await supabase.from("origin_hypotheses").insert({run_id:run.id,owner_id:user.id,title:hypothesis.title.slice(0,240),statement:hypothesis.statement.slice(0,4000),mechanism:(hypothesis.mechanism||"").slice(0,4000),assumptions:Array.isArray(hypothesis.assumptions)?hypothesis.assumptions.slice(0,12):[],predictions:Array.isArray(hypothesis.predictions)?hypothesis.predictions.slice(0,12):[],falsifiers:Array.isArray(hypothesis.falsifiers)?hypothesis.falsifiers.slice(0,12):[],uncertainties:Array.isArray(hypothesis.uncertainties)?hypothesis.uncertainties.slice(0,12):[]}).select("id,title,statement,mechanism,assumptions,predictions,falsifiers,uncertainties").single();
