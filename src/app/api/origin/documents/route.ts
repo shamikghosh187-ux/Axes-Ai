@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: "Sign in to view research documents." }, { status: 401 });
   const projectId = new URL(request.url).searchParams.get("projectId") ?? "";
   if (!projectId) return NextResponse.json({ error: "Choose a project." }, { status: 400 });
-  const { data, error } = await supabase.from("origin_documents").select("id,title,byte_size,parse_status,page_count,created_at").eq("project_id", projectId).eq("owner_id", user.id).order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("origin_documents").select("id,title,byte_size,parse_status,page_count,parse_error,created_at").eq("project_id", projectId).eq("owner_id", user.id).order("created_at", { ascending: false });
   if (error) return NextResponse.json({ error: "Could not load documents. Check the ORIGIN schema." }, { status: 503 });
   return NextResponse.json({ documents: data ?? [] });
 }
