@@ -5,9 +5,11 @@ import { ArrowLeft, BookOpen, FileText, FlaskConical, Plus, Search, UploadCloud,
 type Project = { id:string; title:string; domain:string; research_question:string; scope:string; status:string; created_at:string };
 type Paper = { id?:string; external_id:string; title:string; doi:string|null; publication_year:number|null; cited_by_count:number; landing_url:string; authors:string[] };
 type DocumentItem = { id:string; title:string; byte_size:number; parse_status:string; created_at:string };
+type ReportState = { runId:string; version:number; executive_summary:string; findings:string[]; research_gaps:string[]; limitations:string[]; next_steps:string[]; claims:Array<{text:string;status:string;evidence:Array<{quote:string;page:number|null;relation:string}>}>; hypotheses:Array<{title:string;statement:string;assumptions:string[];predictions:string[];falsifiers:string[];critique:{weaknesses?:string[];alternative_explanations?:string[];discriminating_tests?:string[]}}> };
+type HistoryItem = { id:string; status:string; created_at:string; model_id:string|null; report:{version:number;content:Record<string,unknown>}|null; events:Array<{stage:string;status:string;message:string}> };
 export default function OriginPage() {
  const [projects,setProjects]=useState<Project[]>([]),[active,setActive]=useState(""),[documents,setDocuments]=useState<DocumentItem[]>([]),[papers,setPapers]=useState<Paper[]>([]),[savedPapers,setSavedPapers]=useState<Paper[]>([]);
- const [query,setQuery]=useState(""),[title,setTitle]=useState(""),[domain,setDomain]=useState("physics"),[question,setQuestion]=useState(""),[scope,setScope]=useState(""),[showCreate,setShowCreate]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""); const [report,setReport]=useState<{runId:string;version:number;executive_summary:string;findings:string[];research_gaps:string[];limitations:string[];next_steps:string[];claims:Array<{text:string;status:string;evidence:Array<{quote:string;page:number|null;relation:string}>}>;hypotheses:Array<{title:string;statement:string;assumptions:string[];predictions:string[];falsifiers:string[];critique:{weaknesses?:string[];alternative_explanations?:string[];discriminating_tests?:string[]}}>}|null>(null);
+ const [query,setQuery]=useState(""),[title,setTitle]=useState(""),[domain,setDomain]=useState("physics"),[question,setQuestion]=useState(""),[scope,setScope]=useState(""),[showCreate,setShowCreate]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""); const [report,setReport]=useState<ReportState|null>(null),[history,setHistory]=useState<HistoryItem[]>([]);version:number;executive_summary:string;findings:string[];research_gaps:string[];limitations:string[];next_steps:string[];claims:Array<{text:string;status:string;evidence:Array<{quote:string;page:number|null;relation:string}>}>;hypotheses:Array<{title:string;statement:string;assumptions:string[];predictions:string[];falsifiers:string[];critique:{weaknesses?:string[];alternative_explanations?:string[];discriminating_tests?:string[]}}>}|null>(null);
  const loadProjects = useCallback(async () => {
   const response = await fetch("/api/origin/projects");
   const data = await response.json();
@@ -44,6 +46,16 @@ export default function OriginPage() {
   if (response.ok) setSavedPapers(data.papers || []);
  }, []);
 
+ const loadResearchHistory = useCallback(async (projectId:string) => {
+  if(!projectId){setHistory([]);setReport(null);return;}
+  const response=await fetch("/api/origin/research?projectId="+encodeURIComponent(projectId));
+  const data=await response.json();
+  if(!response.ok){setHistory([]);return;}
+  const items=(data.history||[]) as HistoryItem[];setHistory(items);
+  const latest=items.find(item=>item.report?.content);
+  if(latest?.report?.content){setReport({...latest.report.content,runId:latest.id,version:latest.report.version} as unknown as ReportState);}else setReport(null);
+ }, []);
+
  useEffect(() => {
   void loadProjects();
  }, [loadProjects]);
@@ -51,13 +63,14 @@ export default function OriginPage() {
  useEffect(() => {
   void loadDocuments(active);
   void loadSavedPapers(active);
+  void loadResearchHistory(active);
   setPapers([]);
- }, [active, loadDocuments, loadSavedPapers]);
+ }, [active, loadDocuments, loadSavedPapers, loadResearchHistory]);
  const current=projects.find(p=>p.id===active);
  async function createProject(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError("");setNotice("");const r=await fetch("/api/origin/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,domain,research_question:question,scope})});const j=await r.json();if(!r.ok)setError(j.error||"Could not create project.");else{setTitle("");setQuestion("");setScope("");setShowCreate(false);setNotice("Research project created.");await loadProjects();setActive(j.project.id)}setBusy(false)}
  async function searchPapers(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(!active||!query.trim())return;setBusy(true);setError("");setPapers([]);const r=await fetch("/api/origin/literature?q="+encodeURIComponent(query)+"&projectId="+encodeURIComponent(active));const j=await r.json();if(!r.ok)setError(j.error||"Literature search failed.");else setPapers(j.papers||[]);setBusy(false)}
  async function savePaper(paper:Paper){const r=await fetch("/api/origin/literature",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:active,paper})});const j=await r.json();if(!r.ok)setError(j.error||"Could not save paper.");else{setNotice("Saved paper: "+paper.title);await loadSavedPapers(active)}}
- async function runResearch(){if(!active)return;setBusy(true);setError("");setNotice("");setReport(null);const r=await fetch("/api/origin/research",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:active})});const j=await r.json();if(!r.ok)setError(j.error||"Research run failed.");else{setReport({runId:j.runId,...j.report});setNotice(j.message||"Research run completed.")}setBusy(false)}
+ async function runResearch(){if(!active)return;setBusy(true);setError("");setNotice("");setReport(null);const r=await fetch("/api/origin/research",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({projectId:active})});const j=await r.json();if(!r.ok)setError(j.error||"Research run failed.");else{setReport({runId:j.runId,...j.report});setNotice(j.message||"Research run completed.");await loadResearchHistory(active)}setBusy(false)}
  async function processDocument(id:string){setBusy(true);setError("");setNotice("");const r=await fetch("/api/origin/documents/"+encodeURIComponent(id)+"/process",{method:"POST"});const j=await r.json();if(!r.ok)setError(j.error||"Document processing failed.");else setNotice(j.message||("Indexed "+j.pageCount+" pages into "+j.chunkCount+" passages."));await loadDocuments(active);setBusy(false)}
  async function openDocument(id:string){const r=await fetch("/api/origin/documents/"+encodeURIComponent(id));const j=await r.json();if(!r.ok){setError(j.error||"Could not open document.");return}window.open(j.url,"_blank","noopener,noreferrer")}
  async function uploadPdf(e:React.ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];if(!file||!active)return;setBusy(true);setError("");setNotice("");const form=new FormData();form.append("projectId",active);form.append("file",file);const r=await fetch("/api/origin/documents",{method:"POST",body:form});const j=await r.json();if(!r.ok)setError(j.error||"Upload failed.");else{setNotice(j.message||"PDF uploaded.");await loadDocuments(active)}e.target.value="";setBusy(false)}
