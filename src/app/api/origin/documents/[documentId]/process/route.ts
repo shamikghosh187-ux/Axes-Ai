@@ -5,6 +5,7 @@ import { decryptSecret } from "@/lib/crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 type RouteContext = { params: Promise<{ documentId: string }> };
 type ExtractedPage = { page_number: number; text: string };
 
@@ -70,7 +71,7 @@ export async function POST(_request: Request, context: RouteContext) {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(110000),
+      signal: AbortSignal.timeout(50000),
       body: JSON.stringify({
         contents: [{
           role: "user",
@@ -79,7 +80,7 @@ export async function POST(_request: Request, context: RouteContext) {
             { inline_data: { mime_type: "application/pdf", data: bytes.toString("base64") } }
           ]
         }],
-        generationConfig: { temperature: 0, responseMimeType: "application/json", maxOutputTokens: 8192 }
+        generationConfig: { temperature: 0, responseMimeType: "application/json", maxOutputTokens: 16384 }
       })
     });
     const payload: unknown = await response.json().catch(() => null);
