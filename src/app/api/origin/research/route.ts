@@ -5,6 +5,7 @@ import { decryptSecret } from "@/lib/crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 type Chunk = { id:string; content:string; page_start:number|null; page_end:number|null; document_id:string };
 type EvidenceDraft = { chunk_id:string; relation:"supports"|"contradicts"|"context"; quote:string; rationale?:string };
 type ClaimDraft = { text:string; claim_kind?:string; evidence?:EvidenceDraft[] };
