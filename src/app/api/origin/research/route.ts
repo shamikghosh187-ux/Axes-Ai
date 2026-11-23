@@ -47,8 +47,8 @@ export async function POST(request: Request) {
   if(chunkError) return NextResponse.json({error:"Could not load indexed source passages. Confirm the ORIGIN database schema is installed."},{status:503});
   if(!chunks?.length) return NextResponse.json({error:"Index at least one research PDF before running an evidence-grounded investigation."},{status:400});
   const stopWords=new Set(["the","and","for","with","from","that","this","what","when","where","which","into","about","how","does","are","was","were","can","could","would","should","have","has","had","not","but","than","then","their","there","these","those"]);
-  const questionTerms=[...new Set((project.research_question.toLowerCase().match(/[a-z0-9]{3,}/g)||[]).filter((term:string)=>!stopWords.has(term)))];
-  const rankedChunks=(chunks as Chunk[]).map(chunk=>{const tokens=chunk.content.toLowerCase().match(/[a-z0-9]{3,}/g)||[];const counts=new Map<string,number>();for(const token of tokens)counts.set(token,(counts.get(token)||0)+1);const score=questionTerms.reduce((total,term)=>total+(counts.get(term)||0),0);return {chunk,score};}).sort((a,b)=>b.score-a.score).slice(0,16).map(item=>item.chunk);
+  const questionTerms: string[] = Array.from(new Set<string>((project.research_question.toLowerCase().match(/[a-z0-9]{3,}/g)||[]).filter((term: string)=>!stopWords.has(term))));
+  const rankedChunks=(chunks as Chunk[]).map(chunk=>{const tokens=chunk.content.toLowerCase().match(/[a-z0-9]{3,}/g)||[];const counts=new Map<string,number>();for(const token of tokens)counts.set(token,(counts.get(token)||0)+1);const score=questionTerms.reduce<number>((total: number,term: string)=>total+(counts.get(term)||0),0);return {chunk,score};}).sort((a,b)=>b.score-a.score).slice(0,16).map(item=>item.chunk);
 
   const admin=createAdminClient();
   const {data:credential}=await admin.from("provider_credentials").select("encrypted_secret").eq("user_id",user.id).eq("provider","google").eq("enabled",true).order("priority",{ascending:true}).limit(1).maybeSingle();
