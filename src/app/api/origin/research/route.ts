@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     await addEvent(2,"evidence_mapping","running","Validating model-suggested quotations against stored source passages.");
     const chunkMap=new Map<string,Chunk>((chunks as Chunk[]).map(chunk=>[chunk.id,chunk] as const));
-    const savedClaims:Array<{id:string;text:string;status:string;evidence:Array<{chunk_id:string;relation:string;quote:string;page:number|null}>}>=[];
+    const savedClaims:Array<{id:string;text:string;status:string;evidence:Array<{chunk_id:string;document_id:string;relation:string;quote:string;page:number|null}>}>=[];
     for(const claim of draft.claims.slice(0,8)){
       if(typeof claim.text!=="string"||!claim.text.trim()) continue;
       const validEvidence=(claim.evidence||[]).flatMap(item=>{
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
         const {error:evidenceError}=await supabase.from("origin_claim_evidence").insert(evidenceRows);
         if(evidenceError) throw new Error("Could not persist validated claim evidence.");
       }
-      savedClaims.push({id:saved.id,text:claim.text,status:epistemic,evidence:uniqueEvidence.map(item=>({chunk_id:item.chunk_id,relation:item.relation,quote:item.quote,page:chunkMap.get(item.chunk_id)?.page_start??null}))});
+      savedClaims.push({id:saved.id,text:claim.text,status:epistemic,evidence:uniqueEvidence.map(item=>({chunk_id:item.chunk_id,document_id:chunkMap.get(item.chunk_id)?.document_id??"",relation:item.relation,quote:item.quote,page:chunkMap.get(item.chunk_id)?.page_start??null}))});
     }
 
     await addEvent(3,"hypothesis_review","running","Reviewing competing explanations, predictions, falsifiers and weaknesses.");
