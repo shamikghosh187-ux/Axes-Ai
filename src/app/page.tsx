@@ -771,6 +771,7 @@ export default function Home() {
       <div className="sidebar-section-label">WORKSPACE</div>
       <nav className="sidebar-nav">
         {navItems.map(({label,icon:Icon}) => <button key={label} className={activeNav === label ? "nav-item active" : "nav-item"} onClick={() => setActiveNav(label)}><Icon size={16}/><span>{label}</span></button>)}
+        <a className="nav-item" href="/dashboard/origin"><Microscope size={16}/><span>ORIGIN Research</span></a>
       </nav>
       <div className="sidebar-bottom">
         <button className="sidebar-bottom-item" onClick={() => setActiveNav("Models")}><BrainCircuit size={16}/><span>Models</span><span className="tiny-count">{models.length}</span></button>
