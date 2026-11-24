@@ -69,7 +69,7 @@ export default function Home() {
         {view === "Overview" && <>
           <section className="hero-panel">
             <div className="hero-copy"><div className="hero-tag"><Sparkles size={13}/> A SPACE FOR BIG QUESTIONS</div><h2>Think beyond<br/>what is known.</h2><p>Follow ideas into evidence. Discover what has been explored, what remains uncertain, and where a new discovery might begin.</p><button className="hero-cta" onClick={() => setShowCreate(true)}>Begin an investigation <ArrowRight size={16}/></button></div>
-            <div className="hero-visual" aria-hidden="true"><div className="hero-glow"/><div className="planet"><div className="planet-shade"/></div><div className="planet-ring ring-a"/><div className="planet-ring ring-b"/><span className="star star-a"/><span className="star star-b"/><span className="star star-c"/><span className="star star-d"/><div className="visual-label"><span/> IDEAS IN ORBIT</div></div>
+            <div className="hero-ambient" aria-hidden="true"><span className="ambient-line"/><span className="ambient-line"/><span className="ambient-line"/></div>
             <div className="hero-index">01 <span>/ 04</span></div>
           </section>
 
