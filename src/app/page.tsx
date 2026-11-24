@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import {
   Activity, ArrowDownRight, ArrowRight, Atom, BookOpen, Check,
-  ChevronDown, ChevronRight, CircleHelp, Command, FileText, Filter,
+  ChevronDown, ChevronRight, CircleHelp, FileText,
   FlaskConical, FolderKanban, LayoutDashboard, Library, Menu, Plus,
-  Search, Settings2, Sparkles, UploadCloud, X, Clock3, MoreHorizontal,
+  Search, Settings2, Sparkles, X, Clock3, MoreHorizontal,
   PanelLeftClose, PanelLeftOpen, Microscope, Network, SlidersHorizontal
 } from "lucide-react";
 
